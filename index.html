@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>塩分・カロリー管理</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 12px; padding-bottom: 60px; -webkit-tap-highlight-color: transparent; }
+    .container { max-width: 480px; margin: 0 auto; }
+    h1 { font-size: 1.1rem; text-align: center; margin-bottom: 12px; color: var(--muted); }
+    .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+    
+    .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-weight: bold; }
+    .metric-val { font-size: 1.5rem; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .bar-bg { width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-bottom: 12px; }
+    .bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease, background-color 0.3s ease; }
+    .danger-text { color: var(--danger) !important; }
+    .bar-fill.warning { background: var(--warning); }
+    .bar-fill.danger { background: var(--danger); }
+
+    .form-group { display: flex; gap: 8px; margin-bottom: 8px; }
+    input { flex: 1; min-width: 0; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
+    input:focus { outline: none; border-color: var(--primary); ring: 2px var(--primary); }
+    button { padding: 10px 16px; border: none; border-radius: 8px; background: var(--primary); color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
+    button.calc-btn { background: #475569; font-size: 0.8rem; padding: 6px 10px; }
+    
+    .calc-box { background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; }
+    .calc-box-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
+
+    .item-list { list-style: none; margin-top: 8px; }
+    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.95rem; }
+    .delete-btn { color: var(--danger); background: none; border: none; padding: 4px 8px; font-size: 1.2rem; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 id="todayDate">本日の記録</h1>
+
+    <!-- 残り枠メーター -->
+    <div class="card">
+      <div class="metric-row">
+        <span>残り塩分</span>
+        <span class="metric-val" id="remainSalt">6.00 g</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" id="saltBar"></div></div>
+
+      <div class="metric-row">
+        <span>残りカロリー</span>
+        <span class="metric-val" id="remainCal">2000 kcal</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill" id="calBar"></div></div>
+      <div style="font-size: 0.85rem; color: var(--muted); text-align: right;">
+        本日摂取: 塩分 <span id="usedSalt">0.00</span>g / <span id="usedCal">0</span>kcal
+      </div>
+    </div>
+
+    <!-- 食事追加 -->
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <strong>食事・間食の記録</strong>
+        <button class="calc-btn" type="button" onclick="toggleCalc()">換算電卓</button>
+      </div>
+
+      <!-- 換算ツール -->
+      <div id="calcBox" class="calc-box" style="display: none;">
+        <div><strong>100mlあたり／小分けの換算</strong></div>
+        <div class="calc-box-row">
+          <input type="number" id="calcUnitVal" placeholder="表示値(g)" step="0.01" inputmode="decimal" oninput="runMiniCalc()">
+          <span>×</span>
+          <input type="number" id="calcTotalVolume" placeholder="総量(ml)" inputmode="numeric" oninput="runMiniCalc()">
+          <span>÷</span>
+          <input type="number" id="calcBaseVolume" value="100" style="max-width:55px;" inputmode="numeric" oninput="runMiniCalc()">
+        </div>
+        <div class="calc-box-row" style="justify-content: flex-end; margin-top: 8px;">
+          <span id="calcResult" style="font-weight: bold; margin-right: 8px;">計算結果: 0.00g</span>
+          <button class="calc-btn" type="button" onclick="applyCalc()">塩分枠へ</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <input type="text" id="foodName" placeholder="食品名 (例: 鮭おにぎり)">
+      </div>
+      <div class="form-group">
+        <input type="number" id="foodSalt" placeholder="塩分 (g)" step="0.01" inputmode="decimal">
+        <input type="number" id="foodCal" placeholder="カロリー (kcal)" inputmode="numeric">
+        <button type="button" onclick="addFood()">追加</button>
+      </div>
+      <ul class="item-list" id="foodList"></ul>
+    </div>
+
+    <!-- 体重管理 -->
+    <div class="card">
+      <strong>朝の体重測定</strong>
+      <div class="form-group" style="margin-top: 8px;">
+        <input type="number" id="weightVal" placeholder="今朝の体重 (kg)" step="0.1" inputmode="decimal">
+        <button type="button" onclick="saveWeight()">保存</button>
+      </div>
+      <div id="weightDisplay" style="font-size: 0.9rem; color: var(--muted); margin-top: 4px;">未記録</div>
+    </div>
+  </div>
+
+  <script>
+    const MAX_SALT = 6.0;
+    const MAX_CAL = 2000;
+
+    // 日本時間の現地日付を正確に取得 (YYYY-MM-DD)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const today = `${year}-${month}-${day}`;
+
+    document.getElementById('todayDate').innerText = `${year}年${Number(month)}月${Number(day)}日の記録`;
+
+    let data = JSON.parse(localStorage.getItem('heartHealthData')) || {};
+    if (!data[today]) {
+      data[today] = { foods: [], weight: null };
+    }
+
+    function render() {
+      const todayData = data[today];
+      const totalSalt = todayData.foods.reduce((sum, f) => sum + (parseFloat(f.salt) || 0), 0);
+      const totalCal = todayData.foods.reduce((sum, f) => sum + (parseInt(f.cal) || 0), 0);
+
+      const remainSalt = Math.max(0, MAX_SALT - totalSalt);
+      const remainCal = Math.max(0, MAX_CAL - totalCal);
+
+      document.getElementById('usedSalt').innerText = totalSalt.toFixed(2);
+      document.getElementById('usedCal').innerText = totalCal;
+      
+      const saltElem = document.getElementById('remainSalt');
+      saltElem.innerText = remainSalt.toFixed(2) + ' g';
+      if (totalSalt >= MAX_SALT) saltElem.classList.add('danger-text');
+      else saltElem.classList.remove('danger-text');
+
+      document.getElementById('remainCal').innerText = remainCal + ' kcal';
+
+      // 塩分ゲージ
+      const saltPercent = Math.min(100, (totalSalt / MAX_SALT) * 100);
+      const saltBar = document.getElementById('saltBar');
+      saltBar.style.width = saltPercent + '%';
+      saltBar.className = 'bar-fill' + (saltPercent >= 100 ? ' danger' : saltPercent > 70 ? ' warning' : '');
+
+      // カロリーゲージ
+      const calPercent = Math.min(100, (totalCal / MAX_CAL) * 100);
+      document.getElementById('calBar').style.width = calPercent + '%';
+
+      // 食事リスト
+      const list = document.getElementById('foodList');
+      list.innerHTML = '';
+      todayData.foods.forEach((item, index) => {
+        const li = document.createElement('li');
+        li.className = 'item-row';
+        li.innerHTML = `
+          <span>${item.name} (${item.salt}g / ${item.cal}kcal)</span>
+          <button class="delete-btn" type="button" onclick="removeFood(${index})">×</button>
+        `;
+        list.appendChild(li);
+      });
+
+      // 体重
+      const weightElem = document.getElementById('weightDisplay');
+      weightElem.innerText = todayData.weight ? `記録済み: ${todayData.weight} kg` : '未記録（起きてトイレの後に測定）';
+
+      localStorage.setItem('heartHealthData', JSON.stringify(data));
+    }
+
+    function addFood() {
+      const name = document.getElementById('foodName').value.trim() || '食事';
+      const salt = parseFloat(document.getElementById('foodSalt').value) || 0;
+      const cal = parseInt(document.getElementById('foodCal').value) || 0;
+
+      data[today].foods.push({ name, salt, cal });
+      document.getElementById('foodName').value = '';
+      document.getElementById('foodSalt').value = '';
+      document.getElementById('foodCal').value = '';
+      render();
+    }
+
+    function removeFood(index) {
+      data[today].foods.splice(index, 1);
+      render();
+    }
+
+    function saveWeight() {
+      const weight = parseFloat(document.getElementById('weightVal').value);
+      if (weight) {
+        data[today].weight = weight;
+        document.getElementById('weightVal').value = '';
+        render();
+      }
+    }
+
+    function toggleCalc() {
+      const box = document.getElementById('calcBox');
+      box.style.display = box.style.display === 'none' ? 'block' : 'none';
+    }
+
+    function runMiniCalc() {
+      const val = parseFloat(document.getElementById('calcUnitVal').value) || 0;
+      const totalVol = parseFloat(document.getElementById('calcTotalVolume').value) || 0;
+      const baseVol = parseFloat(document.getElementById('calcBaseVolume').value) || 100;
+      const result = (val * (totalVol / baseVol)).toFixed(2);
+      document.getElementById('calcResult').innerText = `計算結果: ${result}g`;
+      return result;
+    }
+
+    function applyCalc() {
+      const result = runMiniCalc();
+      document.getElementById('foodSalt').value = result;
+      document.getElementById('calcBox').style.display = 'none';
+    }
+
+    render();
+  </script>
+</body>
+</html>
