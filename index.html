@@ -4,10 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Health Tracker - 塩分・体重管理</title>
-  <!-- 洗練されたモダンフォント（欧文・数字用 & 日本語用） -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@500;700&display=swap" rel="stylesheet">
+
+  <!-- PWA & アプリアイコン設定 -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ヘルスケア">
+  <link id="appleIcon" rel="apple-touch-icon" href="">
+
   <style>
     :root {
       --bg: #f8fafc;
@@ -27,7 +30,7 @@
       box-sizing: border-box; 
       margin: 0; 
       padding: 0; 
-      font-family: 'Plus Jakarta Sans', 'Zen Kaku Gothic New', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
       -webkit-font-smoothing: antialiased;
     }
     body { background-color: var(--bg); color: var(--text-main); padding: 16px 12px 80px 12px; -webkit-tap-highlight-color: transparent; }
@@ -42,13 +45,10 @@
     .nav-btn {
       background: #f1f5f9; border: none; color: var(--text-main);
       border-radius: 10px; padding: 8px 14px; font-size: 0.85rem; font-weight: 700; cursor: pointer;
-      transition: background-color 0.2s;
     }
-    .nav-btn:active { background: #e2e8f0; }
     .date-input {
       border: 1px solid var(--border); border-radius: 10px; padding: 6px 12px;
       font-size: 0.95rem; font-weight: 700; color: var(--text-main); background: #f8fafc;
-      letter-spacing: -0.01em;
     }
 
     /* 共通カード */
@@ -60,7 +60,6 @@
     .card-title {
       font-size: 0.95rem; font-weight: 700; color: var(--text-main);
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
-      letter-spacing: -0.01em;
     }
 
     /* メーターカード */
@@ -69,8 +68,8 @@
       background: #f8fafc; border: 1px solid var(--border); border-radius: 14px;
       padding: 14px 14px; display: flex; flex-direction: column; justify-content: space-between;
     }
-    .meter-label { font-size: 0.78rem; font-weight: 700; color: var(--text-sub); letter-spacing: 0.02em; }
-    .meter-val { font-size: 1.7rem; font-weight: 800; color: var(--primary); letter-spacing: -0.03em; margin: 4px 0; font-variant-numeric: tabular-nums; }
+    .meter-label { font-size: 0.78rem; font-weight: 700; color: var(--text-sub); }
+    .meter-val { font-size: 1.7rem; font-weight: 800; color: var(--primary); letter-spacing: -0.03em; margin: 4px 0; }
     .meter-val small { font-size: 0.85rem; font-weight: 600; color: var(--text-sub); margin-left: 2px; }
     .bar-bg { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 4px; }
     .bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease; }
@@ -82,7 +81,6 @@
     .cat-btn {
       flex: 1; padding: 10px 0; border: 1px solid var(--border); background: #f8fafc;
       border-radius: 10px; font-size: 0.85rem; font-weight: 700; color: var(--text-sub); cursor: pointer;
-      transition: all 0.2s ease;
     }
     .cat-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25); }
 
@@ -97,9 +95,7 @@
     button.btn-primary {
       padding: 10px 18px; border: none; border-radius: 10px; background: var(--primary);
       color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap;
-      transition: opacity 0.2s;
     }
-    button.btn-primary:active { opacity: 0.85; }
     button.calc-toggle {
       background: #f1f5f9; border: 1px solid var(--border); color: var(--text-sub);
       font-size: 0.78rem; font-weight: 700; padding: 5px 10px; border-radius: 8px; cursor: pointer;
@@ -132,7 +128,7 @@
 
     /* グラフ */
     .chart-container { position: relative; width: 100%; height: 200px; margin-top: 10px; }
-    canvas { width: 100%; height: 100%; display: block; }
+    canvas#healthChart { width: 100%; height: 100%; display: block; }
     .chart-tabs { display: flex; gap: 4px; }
     .chart-tab { background: #f1f5f9; color: var(--text-sub); border: none; padding: 5px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
     .chart-tab.active { background: var(--primary); color: #fff; }
@@ -254,6 +250,62 @@
   </div>
 
   <script>
+    // 1. アイコン画像の動的生成（外部画像不要で確実にアプリアイコンを設定）
+    function setupAppIcon() {
+      try {
+        const c = document.createElement('canvas');
+        c.width = 512;
+        c.height = 512;
+        const ctx = c.getContext('2d');
+
+        // 背景グラデーション（深緑）
+        const grad = ctx.createLinearGradient(0, 0, 512, 512);
+        grad.addColorStop(0, '#064e3b');
+        grad.addColorStop(1, '#0f766e');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(256, 256, 256, 0, Math.PI * 2);
+        ctx.fill();
+
+        // メーターリング（外枠）
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+        ctx.lineWidth = 22;
+        ctx.beginPath();
+        ctx.arc(256, 256, 180, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // メーターリング（進捗ティール）
+        ctx.strokeStyle = '#2dd4bf';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.arc(256, 256, 180, -Math.PI / 2, Math.PI * 0.9);
+        ctx.stroke();
+
+        // 黄金比ハートの描画
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = 'rgba(0,0,0,0.2)';
+        ctx.shadowBlur = 16;
+        ctx.shadowOffsetY = 6;
+        ctx.beginPath();
+        ctx.moveTo(256, 375);
+        ctx.bezierCurveTo(256, 375, 140, 290, 140, 205);
+        ctx.bezierCurveTo(140, 150, 180, 120, 222, 120);
+        ctx.bezierCurveTo(243, 120, 252, 130, 256, 136);
+        ctx.bezierCurveTo(260, 130, 269, 120, 290, 120);
+        ctx.bezierCurveTo(332, 120, 372, 150, 372, 205);
+        ctx.bezierCurveTo(372, 290, 256, 375, 256, 375);
+        ctx.closePath();
+        ctx.fill();
+
+        const iconUrl = c.toDataURL('image/png');
+        document.getElementById('appleIcon').href = iconUrl;
+      } catch(e) {
+        console.error(e);
+      }
+    }
+    setupAppIcon();
+
+    // 2. メインロジック
     const MAX_SALT = 6.0;
     const MAX_CAL = 2000;
     let chartMode = 'both';
@@ -271,9 +323,11 @@
     function selectCategory(cat) {
       currentCategory = cat;
       ['breakfast', 'lunch', 'dinner', 'snack'].forEach(c => {
-        const btn = document.getElementById(`cat-${c}`);
-        if (c === cat) btn.classList.add('active');
-        else btn.classList.remove('active');
+        const btn = document.getElementById('cat-' + c);
+        if (btn) {
+          if (c === cat) btn.classList.add('active');
+          else btn.classList.remove('active');
+        }
       });
     }
 
@@ -323,7 +377,7 @@
 
       document.getElementById('remainCal').innerHTML = remainCal + ' <small>kcal</small>';
 
-      // メーターゲージ
+      // メーター
       const saltPercent = Math.min(100, (totalSalt / MAX_SALT) * 100);
       const saltBar = document.getElementById('saltBar');
       saltBar.style.width = saltPercent + '%';
@@ -476,7 +530,10 @@
     function setChartMode(mode) {
       chartMode = mode;
       ['Both', 'Salt', 'Weight'].forEach(m => {
-        document.getElementById('tab' + m).className = 'chart-tab' + (mode.toLowerCase() === m.toLowerCase() ? ' active' : '');
+        const tab = document.getElementById('tab' + m);
+        if (tab) {
+          tab.className = 'chart-tab' + (mode.toLowerCase() === m.toLowerCase() ? ' active' : '');
+        }
       });
       drawChart();
     }
@@ -488,6 +545,8 @@
       const dpr = window.devicePixelRatio || 1;
       
       const rect = canvas.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+
       canvas.width = rect.width * dpr;
       canvas.height = rect.height * dpr;
       ctx.scale(dpr, dpr);
@@ -523,7 +582,7 @@
       const stepX = plotW / 6;
 
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '700 10px "Plus Jakarta Sans", sans-serif';
+      ctx.font = '700 10px sans-serif';
       ctx.textAlign = 'center';
       dates.forEach((d, idx) => {
         const x = padLeft + idx * stepX;
@@ -566,7 +625,7 @@
 
           if (val > 0) {
             ctx.fillStyle = '#0f172a';
-            ctx.font = '700 9px "Plus Jakarta Sans", sans-serif';
+            ctx.font = '700 9px sans-serif';
             ctx.fillText(val.toFixed(1), x, y - 7);
           }
         });
@@ -602,7 +661,7 @@
             ctx.fill();
 
             ctx.fillStyle = '#0f766e';
-            ctx.font = '700 9px "Plus Jakarta Sans", sans-serif';
+            ctx.font = '700 9px sans-serif';
             ctx.fillText(val.toFixed(1), x, y + 14);
           });
         }
