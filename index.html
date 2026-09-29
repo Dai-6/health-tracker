@@ -2,115 +2,166 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>塩分・カロリー管理</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Health Tracker - 塩分・体重管理</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --secondary: #10b981;
-      --warning: #d97706;
-      --danger: #dc2626;
-      --bg: #f8fafc;
-      --card: #ffffff;
-      --text: #0f172a;
-      --muted: #64748b;
+      --bg: #f1f5f9;
+      --card-bg: #ffffff;
+      --primary: #0f766e;
+      --primary-light: #ccfbf1;
+      --secondary: #0284c7;
+      --accent: #f59e0b;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --text-main: #0f172a;
+      --text-sub: #64748b;
+      --border: #e2e8f0;
+      --radius: 16px;
+      --shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05), 0 2px 6px -1px rgba(15, 23, 42, 0.03);
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding: 12px; padding-bottom: 70px; -webkit-tap-highlight-color: transparent; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "SF Pro JP", "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text-main); padding: 14px 12px 80px 12px; -webkit-tap-highlight-color: transparent; }
     .container { max-width: 480px; margin: 0 auto; }
-    
-    /* 日付ナビゲーション */
-    .date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; background: var(--card); padding: 8px 12px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .nav-btn { background: none; border: none; color: var(--primary); font-size: 1rem; font-weight: bold; cursor: pointer; padding: 6px 10px; }
-    .date-input { border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 8px; font-size: 0.95rem; font-weight: bold; color: var(--text); }
-    
-    .card { background: var(--card); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
-    .card-title { font-size: 1rem; font-weight: bold; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 
-    /* メーター */
-    .metric-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; font-weight: bold; }
-    .metric-val { font-size: 1.5rem; color: var(--primary); font-variant-numeric: tabular-nums; }
-    .bar-bg { width: 100%; height: 10px; background: #e2e8f0; border-radius: 5px; overflow: hidden; margin-bottom: 12px; }
-    .bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease, background-color 0.3s ease; }
-    .danger-text { color: var(--danger) !important; }
-    .bar-fill.warning { background: var(--warning); }
+    /* ナビゲーションバー */
+    .date-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      background: var(--card-bg); border-radius: var(--radius); padding: 10px 14px;
+      margin-bottom: 14px; box-shadow: var(--shadow);
+    }
+    .nav-btn {
+      background: #f8fafc; border: 1px solid var(--border); color: var(--text-main);
+      border-radius: 10px; padding: 8px 12px; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+    }
+    .date-input {
+      border: 1px solid var(--border); border-radius: 10px; padding: 6px 10px;
+      font-size: 0.95rem; font-weight: 700; color: var(--text-main); background: #f8fafc;
+    }
+
+    /* 共通カード */
+    .card {
+      background: var(--card-bg); border-radius: var(--radius);
+      padding: 18px 16px; margin-bottom: 14px; box-shadow: var(--shadow);
+      border: 1px solid rgba(226, 232, 240, 0.6);
+    }
+    .card-title {
+      font-size: 0.95rem; font-weight: 700; color: var(--text-main);
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    /* メーターカード */
+    .meter-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+    .meter-box {
+      background: #f8fafc; border: 1px solid var(--border); border-radius: 12px;
+      padding: 12px 14px; display: flex; flex-direction: column; justify-content: space-between;
+    }
+    .meter-label { font-size: 0.78rem; font-weight: 600; color: var(--text-sub); }
+    .meter-val { font-size: 1.6rem; font-weight: 800; color: var(--primary); letter-spacing: -0.02em; margin: 4px 0; }
+    .meter-val small { font-size: 0.85rem; font-weight: 600; color: var(--text-sub); }
+    .bar-bg { width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; }
+    .bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease; }
     .bar-fill.danger { background: var(--danger); }
+    .danger-text { color: var(--danger) !important; }
 
-    /* カテゴリ選択タブ */
-    .category-selector { display: flex; gap: 6px; margin-bottom: 10px; }
-    .cat-btn { flex: 1; padding: 8px 0; border: 1px solid #cbd5e1; background: #f8fafc; border-radius: 8px; font-size: 0.85rem; font-weight: bold; color: var(--muted); cursor: pointer; }
-    .cat-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+    /* カテゴリタブ */
+    .category-selector { display: flex; gap: 6px; margin-bottom: 12px; }
+    .cat-btn {
+      flex: 1; padding: 9px 0; border: 1px solid var(--border); background: #f8fafc;
+      border-radius: 10px; font-size: 0.85rem; font-weight: 600; color: var(--text-sub); cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cat-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 2px 6px rgba(15, 118, 110, 0.25); }
 
-    /* フォーム関係 */
+    /* フォームスタイル */
     .form-group { display: flex; gap: 8px; margin-bottom: 8px; }
-    input { flex: 1; min-width: 0; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 1rem; -webkit-appearance: none; }
-    input:focus { outline: none; border-color: var(--primary); ring: 2px var(--primary); }
-    button { padding: 10px 16px; border: none; border-radius: 8px; background: var(--primary); color: #fff; font-weight: bold; font-size: 0.95rem; cursor: pointer; white-space: nowrap; }
-    button.calc-btn { background: #475569; font-size: 0.8rem; padding: 6px 10px; }
-    button.del-btn-sub { background: #ef4444; font-size: 0.85rem; padding: 10px 14px; }
-    
-    .calc-box { background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 10px; font-size: 0.85rem; }
+    input, textarea {
+      flex: 1; min-width: 0; padding: 11px 12px; border: 1px solid var(--border);
+      border-radius: 10px; font-size: 0.95rem; background: #f8fafc; color: var(--text-main);
+      -webkit-appearance: none;
+    }
+    input:focus, textarea:focus { outline: none; border-color: var(--primary); background: #fff; }
+    button.btn-primary {
+      padding: 10px 18px; border: none; border-radius: 10px; background: var(--primary);
+      color: #fff; font-weight: 700; font-size: 0.9rem; cursor: pointer; white-space: nowrap;
+    }
+    button.calc-toggle {
+      background: #f1f5f9; border: 1px solid var(--border); color: var(--text-sub);
+      font-size: 0.78rem; font-weight: 600; padding: 5px 10px; border-radius: 8px; cursor: pointer;
+    }
+
+    /* 換算電卓 */
+    .calc-box { background: #f8fafc; border: 1px solid var(--border); padding: 12px; border-radius: 12px; margin-bottom: 12px; font-size: 0.82rem; }
     .calc-box-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; }
 
-    /* 食事区分ごとのリストスタイル */
-    .meal-section { margin-top: 12px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
-    .meal-section:first-child { border-top: none; margin-top: 0; padding-top: 0; }
-    .meal-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; font-weight: bold; color: var(--text); padding: 4px 0; }
-    .meal-subtotal { font-size: 0.8rem; color: var(--muted); font-weight: normal; }
-    .meal-subtotal strong { color: var(--primary); font-weight: bold; }
-    .item-list { list-style: none; margin-top: 4px; }
-    .item-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed #f1f5f9; font-size: 0.9rem; }
-    .item-row:last-child { border-bottom: none; }
-    .delete-btn { color: var(--danger); background: none; border: none; padding: 2px 6px; font-size: 1.1rem; cursor: pointer; }
+    /* 食事リスト表示 */
+    .meal-section { margin-top: 14px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+    .meal-section:first-child { border-top: none; margin-top: 4px; padding-top: 0; }
+    .meal-header { display: flex; justify-content: space-between; align-items: center; font-size: 0.88rem; font-weight: 700; margin-bottom: 6px; }
+    .meal-badge { background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; }
+    .meal-subtotal { font-size: 0.78rem; color: var(--text-sub); font-weight: 500; }
+    .meal-subtotal strong { color: var(--primary); }
+    .item-list { list-style: none; }
+    .item-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 8px 10px; margin-bottom: 4px; background: #f8fafc; border-radius: 8px; font-size: 0.88rem;
+    }
+    .delete-btn { color: #94a3b8; background: none; border: none; padding: 4px 8px; font-size: 1.2rem; cursor: pointer; }
+    .delete-btn:hover { color: var(--danger); }
 
-    .weight-status-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; padding-top: 6px; border-top: 1px dashed #e2e8f0; font-size: 0.9rem; }
+    /* 体重ステータス */
+    .weight-row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; font-size: 0.85rem; }
+    .del-link { color: var(--danger); background: none; border: none; font-size: 0.8rem; cursor: pointer; padding: 0; }
+
+    /* 日記・メモエリア */
+    .memo-area { width: 100%; border-radius: 10px; resize: none; min-height: 65px; line-height: 1.4; padding: 10px; margin-bottom: 8px; }
 
     /* グラフ */
-    .chart-container { position: relative; width: 100%; height: 210px; margin-top: 8px; }
+    .chart-container { position: relative; width: 100%; height: 200px; margin-top: 10px; }
     canvas { width: 100%; height: 100%; display: block; }
-    .chart-tabs { display: flex; gap: 6px; }
-    .chart-tab { background: #f1f5f9; color: var(--muted); border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: bold; cursor: pointer; }
+    .chart-tabs { display: flex; gap: 4px; }
+    .chart-tab { background: #f1f5f9; color: var(--text-sub); border: none; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; cursor: pointer; }
     .chart-tab.active { background: var(--primary); color: #fff; }
-    .legend-box { display: flex; gap: 12px; font-size: 0.78rem; color: var(--muted); margin-top: 6px; justify-content: center; }
+    .legend-box { display: flex; gap: 14px; font-size: 0.75rem; color: var(--text-sub); margin-top: 8px; justify-content: center; }
     .legend-item { display: flex; align-items: center; gap: 4px; }
     .legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
   </style>
 </head>
 <body>
   <div class="container">
-    <!-- 日付バー -->
+    <!-- 日付ナビゲーション -->
     <div class="date-nav">
       <button class="nav-btn" type="button" onclick="changeDate(-1)">◀ 前日</button>
       <input type="date" id="currentDateInput" class="date-input" onchange="onDateSelect(this.value)">
       <button class="nav-btn" type="button" onclick="changeDate(1)">翌日 ▶</button>
     </div>
 
-    <!-- 今日の安全メーター -->
+    <!-- メーターカード -->
     <div class="card">
-      <div class="metric-row">
-        <span>残り塩分</span>
-        <span class="metric-val" id="remainSalt">6.00 g</span>
-      </div>
-      <div class="bar-bg"><div class="bar-fill" id="saltBar"></div></div>
-
-      <div class="metric-row">
-        <span>残りカロリー</span>
-        <span class="metric-val" id="remainCal">2000 kcal</span>
-      </div>
-      <div class="bar-bg"><div class="bar-fill" id="calBar"></div></div>
-      <div style="font-size: 0.85rem; color: var(--muted); text-align: right;">
-        この日の摂取: 塩分 <span id="usedSalt">0.00</span>g / <span id="usedCal">0</span>kcal
+      <div class="meter-grid">
+        <div class="meter-box">
+          <span class="meter-label">残り塩分</span>
+          <div class="meter-val" id="remainSalt">6.00 <small>g</small></div>
+          <div class="bar-bg"><div class="bar-fill" id="saltBar"></div></div>
+          <div style="font-size:0.75rem; color:var(--text-sub); margin-top:6px;">摂取: <span id="usedSalt">0.00</span>g</div>
+        </div>
+        <div class="meter-box">
+          <span class="meter-label">残りカロリー</span>
+          <div class="meter-val" id="remainCal">2000 <small>kcal</small></div>
+          <div class="bar-bg"><div class="bar-fill" id="calBar"></div></div>
+          <div style="font-size:0.75rem; color:var(--text-sub); margin-top:6px;">摂取: <span id="usedCal">0</span>kcal</div>
+        </div>
       </div>
     </div>
 
-    <!-- 食事記録フォーム -->
+    <!-- 食事記録 -->
     <div class="card">
       <div class="card-title">
-        <span>食事・間食の記録</span>
-        <button class="calc-btn" type="button" onclick="toggleCalc()">換算電卓</button>
+        <span>食事の記録</span>
+        <button class="calc-toggle" type="button" onclick="toggleCalc()">換算電卓</button>
       </div>
 
-      <!-- 食事区分セレクター -->
       <div class="category-selector">
         <button type="button" class="cat-btn" id="cat-breakfast" onclick="selectCategory('breakfast')">朝食</button>
         <button type="button" class="cat-btn" id="cat-lunch" onclick="selectCategory('lunch')">昼食</button>
@@ -120,7 +171,7 @@
 
       <!-- 換算電卓 -->
       <div id="calcBox" class="calc-box" style="display: none;">
-        <div><strong>100mlあたり／小分け換算</strong></div>
+        <div style="font-weight:700; margin-bottom:4px;">100mlあたり／小分けの換算</div>
         <div class="calc-box-row">
           <input type="number" id="calcUnitVal" placeholder="表示値(g)" step="0.01" inputmode="decimal" oninput="runMiniCalc()">
           <span>×</span>
@@ -129,35 +180,42 @@
           <input type="number" id="calcBaseVolume" value="100" style="max-width:55px;" inputmode="numeric" oninput="runMiniCalc()">
         </div>
         <div class="calc-box-row" style="justify-content: flex-end; margin-top: 8px;">
-          <span id="calcResult" style="font-weight: bold; margin-right: 8px;">計算結果: 0.00g</span>
-          <button class="calc-btn" type="button" onclick="applyCalc()">塩分枠へ</button>
+          <span id="calcResult" style="font-weight: bold; margin-right: 8px;">0.00g</span>
+          <button class="calc-toggle" type="button" onclick="applyCalc()">塩分枠へ</button>
         </div>
       </div>
 
       <div class="form-group">
-        <input type="text" id="foodName" placeholder="食品名 (例: 鮭おにぎり)">
+        <input type="text" id="foodName" placeholder="メニュー (例: 納豆ごはん)">
       </div>
       <div class="form-group">
         <input type="number" id="foodSalt" placeholder="塩分 (g)" step="0.01" inputmode="decimal">
         <input type="number" id="foodCal" placeholder="カロリー (kcal)" inputmode="numeric">
-        <button type="button" onclick="addFood()">追加</button>
+        <button type="button" class="btn-primary" onclick="addFood()">追加</button>
       </div>
 
-      <!-- 区分ごとの食事リスト表示エリア -->
-      <div id="groupedFoodList" style="margin-top: 14px;"></div>
+      <div id="groupedFoodList"></div>
     </div>
 
-    <!-- 朝の体重記録 -->
+    <!-- 朝の体重測定 -->
     <div class="card">
       <div class="card-title">朝の体重測定</div>
       <div class="form-group">
         <input type="number" id="weightVal" placeholder="体重 (kg)" step="0.1" inputmode="decimal">
-        <button type="button" onclick="saveWeight()">保存</button>
-        <button type="button" class="del-btn-sub" id="clearWeightBtn" onclick="clearWeight()" style="display:none;">消去</button>
+        <button type="button" class="btn-primary" onclick="saveWeight()">保存</button>
       </div>
-      <div class="weight-status-row">
-        <span id="weightDisplay" style="color: var(--muted);">未記録</span>
-        <button type="button" id="textDeleteBtn" onclick="clearWeight()" style="display:none; background:none; border:none; color:var(--danger); font-size:0.85rem; padding:0; cursor:pointer;">記録を取り消す</button>
+      <div class="weight-row">
+        <span id="weightDisplay" style="color:var(--text-sub);">未記録</span>
+        <button type="button" class="del-link" id="textDeleteBtn" onclick="clearWeight()" style="display:none;">記録を取り消す</button>
+      </div>
+    </div>
+
+    <!-- 一言日記・メモ -->
+    <div class="card">
+      <div class="card-title">一言日記・体調メモ</div>
+      <textarea id="dailyMemo" class="memo-area" placeholder="体調の変化やメモ（例: 外食で少し塩分多め。むくみなし。散歩40分など）"></textarea>
+      <div style="display: flex; justify-content: flex-end;">
+        <button type="button" class="btn-primary" style="padding: 7px 16px; font-size: 0.85rem;" onclick="saveMemo()">メモを保存</button>
       </div>
     </div>
 
@@ -175,8 +233,8 @@
         <canvas id="healthChart"></canvas>
       </div>
       <div class="legend-box">
-        <span class="legend-item" id="legSalt"><span class="legend-dot" style="background:var(--primary);"></span>塩分(g)</span>
-        <span class="legend-item" id="legWeight"><span class="legend-dot" style="background:var(--secondary);"></span>体重(kg)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--secondary);"></span>塩分(g)</span>
+        <span class="legend-item"><span class="legend-dot" style="background:var(--primary);"></span>体重(kg)</span>
         <span class="legend-item" style="color:var(--danger);"><span style="border-bottom:1px dashed var(--danger); width:12px; display:inline-block; margin-right:3px;"></span>目標6g</span>
       </div>
     </div>
@@ -187,7 +245,6 @@
     const MAX_CAL = 2000;
     let chartMode = 'both';
 
-    // 現在選択されている区分（朝食・昼食・夕食・間食）
     let currentCategory = getDefaultCategory();
 
     function getDefaultCategory() {
@@ -220,7 +277,7 @@
 
     function ensureDateData(targetDate) {
       if (!data[targetDate]) {
-        data[targetDate] = { foods: [], weight: null };
+        data[targetDate] = { foods: [], weight: null, memo: '' };
       }
     }
 
@@ -247,35 +304,30 @@
       document.getElementById('usedCal').innerText = totalCal;
       
       const saltElem = document.getElementById('remainSalt');
-      saltElem.innerText = remainSalt.toFixed(2) + ' g';
+      saltElem.innerHTML = remainSalt.toFixed(2) + ' <small>g</small>';
       if (totalSalt >= MAX_SALT) saltElem.classList.add('danger-text');
       else saltElem.classList.remove('danger-text');
 
-      document.getElementById('remainCal').innerText = remainCal + ' kcal';
+      document.getElementById('remainCal').innerHTML = remainCal + ' <small>kcal</small>';
 
-      // ゲージ
+      // メーターゲージ
       const saltPercent = Math.min(100, (totalSalt / MAX_SALT) * 100);
       const saltBar = document.getElementById('saltBar');
       saltBar.style.width = saltPercent + '%';
-      saltBar.className = 'bar-fill' + (saltPercent >= 100 ? ' danger' : saltPercent > 70 ? ' warning' : '');
+      saltBar.className = 'bar-fill' + (saltPercent >= 100 ? ' danger' : '');
 
       const calPercent = Math.min(100, (totalCal / MAX_CAL) * 100);
       document.getElementById('calBar').style.width = calPercent + '%';
 
-      // 区分ごとのグループ分け表示
+      // 食事リスト
       const container = document.getElementById('groupedFoodList');
       container.innerHTML = '';
-
       let hasAnyFood = false;
 
       CATEGORIES.forEach(cat => {
-        // 区分が一致するもの、または未設定（旧データ）で朝昼夕のいずれかに振り分ける
         const itemsWithIndex = dayData.foods
           .map((item, originalIndex) => ({ item, originalIndex }))
-          .filter(({ item }) => {
-            if (item.category) return item.category === cat.key;
-            return cat.key === 'lunch'; // 旧データはひとまず昼食枠に統合
-          });
+          .filter(({ item }) => (item.category ? item.category === cat.key : cat.key === 'lunch'));
 
         if (itemsWithIndex.length > 0) {
           hasAnyFood = true;
@@ -286,7 +338,7 @@
           sec.className = 'meal-section';
           sec.innerHTML = `
             <div class="meal-header">
-              <span>${cat.label}</span>
+              <span class="meal-badge">${cat.label}</span>
               <span class="meal-subtotal">計: <strong>${subSalt.toFixed(2)}g</strong> / ${subCal}kcal</span>
             </div>
             <ul class="item-list"></ul>
@@ -297,7 +349,7 @@
             const li = document.createElement('li');
             li.className = 'item-row';
             li.innerHTML = `
-              <span>${item.name} (${item.salt}g / ${item.cal}kcal)</span>
+              <span>${item.name} <strong style="color:var(--text-sub); font-size:0.8rem;">(${item.salt}g / ${item.cal}kcal)</strong></span>
               <button class="delete-btn" type="button" onclick="removeFood(${originalIndex})">×</button>
             `;
             ul.appendChild(li);
@@ -307,22 +359,22 @@
       });
 
       if (!hasAnyFood) {
-        container.innerHTML = '<div style="font-size:0.85rem; color:var(--muted); text-align:center; padding:12px 0;">まだこの日の食事記録はありません</div>';
+        container.innerHTML = '<div style="font-size:0.85rem; color:var(--text-sub); text-align:center; padding:12px 0;">まだ食事の記録はありません</div>';
       }
 
       // 体重
       const weightDisplay = document.getElementById('weightDisplay');
-      const clearBtn = document.getElementById('clearWeightBtn');
       const textDelBtn = document.getElementById('textDeleteBtn');
       if (dayData.weight) {
-        weightDisplay.innerHTML = `記録済み: <strong style="color:var(--text); font-size:1.05rem;">${dayData.weight} kg</strong>`;
-        clearBtn.style.display = 'inline-block';
+        weightDisplay.innerHTML = `記録済み: <strong style="color:var(--text-main); font-size:1.05rem;">${dayData.weight} kg</strong>`;
         textDelBtn.style.display = 'inline';
       } else {
-        weightDisplay.innerText = '未記録（起きてトイレの後に測定）';
-        clearBtn.style.display = 'none';
+        weightDisplay.innerText = '未記録（起床後トイレの後に測定）';
         textDelBtn.style.display = 'none';
       }
+
+      // メモ・日記
+      document.getElementById('dailyMemo').value = dayData.memo || '';
 
       localStorage.setItem('heartHealthData', JSON.stringify(data));
       drawChart();
@@ -349,13 +401,7 @@
       const salt = parseFloat(document.getElementById('foodSalt').value) || 0;
       const cal = parseInt(document.getElementById('foodCal').value) || 0;
 
-      data[activeDate].foods.push({
-        name,
-        salt,
-        cal,
-        category: currentCategory
-      });
-
+      data[activeDate].foods.push({ name, salt, cal, category: currentCategory });
       document.getElementById('foodName').value = '';
       document.getElementById('foodSalt').value = '';
       document.getElementById('foodCal').value = '';
@@ -380,11 +426,18 @@
 
     function clearWeight() {
       ensureDateData(activeDate);
-      if (confirm('この日の体重記録を消去して未記録に戻しますか？')) {
+      if (confirm('この日の体重記録を消去しますか？')) {
         data[activeDate].weight = null;
         document.getElementById('weightVal').value = '';
         render();
       }
+    }
+
+    function saveMemo() {
+      ensureDateData(activeDate);
+      data[activeDate].memo = document.getElementById('dailyMemo').value;
+      localStorage.setItem('heartHealthData', JSON.stringify(data));
+      alert('メモを保存しました！');
     }
 
     function toggleCalc() {
@@ -397,7 +450,7 @@
       const totalVol = parseFloat(document.getElementById('calcTotalVolume').value) || 0;
       const baseVol = parseFloat(document.getElementById('calcBaseVolume').value) || 100;
       const result = (val * (totalVol / baseVol)).toFixed(2);
-      document.getElementById('calcResult').innerText = `計算結果: ${result}g`;
+      document.getElementById('calcResult').innerText = `${result}g`;
       return result;
     }
 
@@ -479,7 +532,7 @@
 
       if (chartMode === 'both' || chartMode === 'salt') {
         const maxSalt = 10.0;
-        ctx.strokeStyle = '#2563eb';
+        ctx.strokeStyle = '#0284c7';
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         salts.forEach((val, idx) => {
@@ -493,13 +546,13 @@
         salts.forEach((val, idx) => {
           const x = padLeft + idx * stepX;
           const y = padTop + plotH - (Math.min(val, maxSalt) / maxSalt) * plotH;
-          ctx.fillStyle = val >= MAX_SALT ? '#dc2626' : '#2563eb';
+          ctx.fillStyle = val >= MAX_SALT ? '#ef4444' : '#0284c7';
           ctx.beginPath();
           ctx.arc(x, y, 4, 0, Math.PI * 2);
           ctx.fill();
 
           if (val > 0) {
-            ctx.fillStyle = '#1e293b';
+            ctx.fillStyle = '#0f172a';
             ctx.font = 'bold 9px sans-serif';
             ctx.fillText(val.toFixed(1), x, y - 7);
           }
@@ -513,7 +566,7 @@
           const maxW = Math.ceil(Math.max(...validWeights) + 1);
           const rangeW = Math.max(2, maxW - minW);
 
-          ctx.strokeStyle = '#10b981';
+          ctx.strokeStyle = '#0f766e';
           ctx.lineWidth = 2.5;
           ctx.beginPath();
           let started = false;
@@ -530,12 +583,12 @@
             if (val === null) return;
             const x = padLeft + idx * stepX;
             const y = padTop + plotH - ((val - minW) / rangeW) * plotH;
-            ctx.fillStyle = '#10b981';
+            ctx.fillStyle = '#0f766e';
             ctx.beginPath();
             ctx.arc(x, y, 4, 0, Math.PI * 2);
             ctx.fill();
 
-            ctx.fillStyle = '#065f46';
+            ctx.fillStyle = '#0f766e';
             ctx.font = 'bold 9px sans-serif';
             ctx.fillText(val.toFixed(1), x, y + 14);
           });
