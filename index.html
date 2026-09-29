@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Health Tracker</title>
 
-  <!-- iPhone用アプリアイコン指定 -->
+  <!-- iPhone用アプリアイコン指定（IMG_2528.jpegを指定） -->
   <link rel="apple-touch-icon" href="IMG_2528.jpeg">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -75,6 +75,24 @@
     .bar-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.3s ease; }
     .bar-fill.danger { background: var(--danger); }
     .danger-text { color: var(--danger) !important; }
+
+    /* 食事提案カード */
+    .suggest-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
+      border: 1px solid #a7f3d0;
+    }
+    .suggest-badge {
+      display: inline-block; font-size: 0.75rem; font-weight: 700;
+      color: #047857; background: #d1fae5; padding: 3px 8px; border-radius: 6px; margin-bottom: 8px;
+    }
+    .suggest-title { font-size: 0.9rem; font-weight: 700; color: #065f46; margin-bottom: 6px; }
+    .suggest-list { list-style: none; margin-top: 6px; }
+    .suggest-item {
+      font-size: 0.84rem; color: #0f172a; padding: 5px 0; border-bottom: 1px dashed #cbd5e1;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .suggest-item:last-child { border-bottom: none; }
+    .suggest-tag { font-size: 0.75rem; color: #0f766e; font-weight: 600; }
 
     /* カテゴリタブ */
     .category-selector { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -162,6 +180,13 @@
           <div style="font-size:0.75rem; color:var(--text-sub); margin-top:8px;">摂取: <span id="usedCal" style="font-weight:700;">0</span>kcal</div>
         </div>
       </div>
+    </div>
+
+    <!-- おすすめ食事提案カード -->
+    <div class="card suggest-card" id="suggestCard">
+      <div class="suggest-badge" id="suggestBadge">💡 今のおすすめメニュー提案</div>
+      <div class="suggest-title" id="suggestTitle">状況に合わせて読み込み中...</div>
+      <ul class="suggest-list" id="suggestList"></ul>
     </div>
 
     <!-- 食事記録 -->
@@ -299,6 +324,70 @@
       { key: 'snack', label: '間食' }
     ];
 
+    function updateFoodSuggestions(remainSalt, remainCal, totalSalt) {
+      const titleElem = document.getElementById('suggestTitle');
+      const listElem = document.getElementById('suggestList');
+      const badgeElem = document.getElementById('suggestBadge');
+      listElem.innerHTML = '';
+
+      if (totalSalt >= MAX_SALT) {
+        badgeElem.innerText = '⚠️ 塩分目標達成（排出モード）';
+        badgeElem.style.background = '#fee2e2';
+        badgeElem.style.color = '#b91c1c';
+        titleElem.innerText = 'カリウム食材と水分で塩分排出をサポート';
+        const items = [
+          { name: 'きゅうり・トマトの生野菜（ドレッシングなし・レモンのみ）', tag: '塩分 0.0g / 約35kcal' },
+          { name: 'バナナまたはキウイフルーツ（カリウム豊富）', tag: '塩分 0.0g / 約80kcal' },
+          { name: '無塩ナッツ（素焼きアーモンド・くるみ）', tag: '塩分 0.0g / 約100kcal' },
+          { name: '麦茶・ほうじ茶など温かいノンカフェイン茶', tag: '塩分 0.0g / 0kcal' }
+        ];
+        items.forEach(it => appendSuggestItem(listElem, it));
+      } else if (remainSalt < 0.8) {
+        badgeElem.innerText = '🛡️ 塩分セーブモード（残りわずか）';
+        badgeElem.style.background = '#fef3c7';
+        badgeElem.style.color = '#b45309';
+        titleElem.innerText = `残り塩分 ${remainSalt.toFixed(2)}g を守りつつ満足感を得るメニュー`;
+        const items = [
+          { name: '蒸し鶏・茹で豚の香味野菜添え（生姜・ポン酢小さじ1/2）', tag: '塩分 約0.4g / 220kcal' },
+          { name: '焼き魚（無塩サバや鮭）＋すだち・レモン果汁', tag: '塩分 約0.3g / 240kcal' },
+          { name: '湯豆腐・冷奴（おかか・薬味ねぎ・減塩醤油少々）', tag: '塩分 約0.4g / 120kcal' },
+          { name: '焼き芋 または ふかし芋（腹持ち◎＆無塩）', tag: '塩分 0.0g / 約190kcal' }
+        ];
+        items.forEach(it => appendSuggestItem(listElem, it));
+      } else if (remainSalt < 1.8) {
+        badgeElem.innerText = '🥗 バランス定食モード';
+        badgeElem.style.background = '#d1fae5';
+        badgeElem.style.color = '#047857';
+        titleElem.innerText = `残り塩分 ${remainSalt.toFixed(2)}g / 残り約${remainCal}kcalの適正チョイス`;
+        const items = [
+          { name: '豚の生姜焼き定食（ご飯普通盛・味噌汁半分またはなし）', tag: '塩分 約1.4g / 580kcal' },
+          { name: '親子丼（出汁多め・つゆ少なめでオーダー）', tag: '塩分 約1.5g / 520kcal' },
+          { name: '焼き鳥（塩ではなくタレなし素焼きまたはわさび添え3〜4本）', tag: '塩分 約0.9g / 320kcal' },
+          { name: '海鮮丼（醤油をかけず小皿でちょん付け）', tag: '塩分 約1.2g / 490kcal' }
+        ];
+        items.forEach(it => appendSuggestItem(listElem, it));
+      } else {
+        badgeElem.innerText = '✨ 余裕あり（しっかり選べる状態）';
+        badgeElem.style.background = '#e0f2fe';
+        badgeElem.style.color = '#0369a1';
+        titleElem.innerText = '主菜・副菜をしっかり楽しめるメニュー';
+        const items = [
+          { name: '和定食（焼き魚、小鉢、具だくさん味噌汁、白米）', tag: '塩分 約1.8g / 550kcal' },
+          { name: '赤身肉のステーキ（塩コショウ控えめ・わさび醤油）', tag: '塩分 約1.5g / 520kcal' },
+          { name: '具だくさん鍋・水炊き（ポン酢はつけダレで調整）', tag: '塩分 約1.8g / 420kcal' },
+          { name: '寿司盛り合わせ（8〜10貫・醤油少量付け）', tag: '塩分 約1.7g / 480kcal' }
+        ];
+        items.forEach(it => appendSuggestItem(listElem, it));
+      }
+    }
+
+    function appendSuggestItem(container, it) {
+      const li = document.createElement('li');
+      li.className = 'suggest-item';
+      li.innerHTML = `<span>${it.name}</span><span class="suggest-tag">${it.tag}</span>`;
+      container.appendChild(li);
+    }
+
     function render() {
       ensureDateData(activeDate);
       document.getElementById('currentDateInput').value = activeDate;
@@ -329,6 +418,9 @@
 
       const calPercent = Math.min(100, (totalCal / MAX_CAL) * 100);
       document.getElementById('calBar').style.width = calPercent + '%';
+
+      // 食事提案の更新
+      updateFoodSuggestions(remainSalt, remainCal, totalSalt);
 
       // 食事リスト
       const container = document.getElementById('groupedFoodList');
