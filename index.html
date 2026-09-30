@@ -64,22 +64,10 @@
       transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
       will-change: transform, opacity;
     }
-    .slide-exit-left {
-      transform: translateX(-40px);
-      opacity: 0;
-    }
-    .slide-exit-right {
-      transform: translateX(40px);
-      opacity: 0;
-    }
-    .slide-enter-from-right {
-      transform: translateX(40px);
-      opacity: 0;
-    }
-    .slide-enter-from-left {
-      transform: translateX(-40px);
-      opacity: 0;
-    }
+    .slide-exit-left { transform: translateX(-40px); opacity: 0; }
+    .slide-exit-right { transform: translateX(40px); opacity: 0; }
+    .slide-enter-from-right { transform: translateX(40px); opacity: 0; }
+    .slide-enter-from-left { transform: translateX(-40px); opacity: 0; }
 
     /* 日付ナビゲーション */
     .date-nav {
@@ -121,28 +109,53 @@
     .bar-fill.danger { background: var(--danger); }
     .danger-text { color: var(--danger) !important; }
 
-    /* 食事提案カード */
+    /* 食事提案カード（オンデマンド展開式） */
     .suggest-card {
       background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
       border: 1px solid #a7f3d0;
+      display: none; /* 初期は非表示、ボタン押下で展開 */
+      margin-bottom: 12px;
     }
-    .suggest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .suggest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .suggest-badge {
       display: inline-block; font-size: 0.72rem; font-weight: 700;
       color: #047857; background: #d1fae5; padding: 2px 7px; border-radius: 6px;
     }
     .suggest-ai-btn {
       background: #0f766e; color: #fff; border: none; border-radius: 8px;
-      padding: 4px 9px; font-size: 0.72rem; font-weight: 700; cursor: pointer;
+      padding: 5px 10px; font-size: 0.74rem; font-weight: 700; cursor: pointer;
     }
-    .suggest-title { font-size: 0.88rem; font-weight: 700; color: #065f46; margin-bottom: 6px; }
+    .suggest-title { font-size: 0.88rem; font-weight: 700; color: #065f46; margin-bottom: 8px; }
     .suggest-list { list-style: none; }
     .suggest-item {
-      font-size: 0.82rem; color: #0f172a; padding: 5px 0; border-bottom: 1px dashed #cbd5e1;
+      font-size: 0.82rem; color: #0f172a; padding: 6px 0; border-bottom: 1px dashed #cbd5e1;
       display: flex; justify-content: space-between; align-items: center;
     }
     .suggest-item:last-child { border-bottom: none; }
     .suggest-tag { font-size: 0.74rem; color: #0f766e; font-weight: 600; }
+
+    /* 提案トリガーボタン */
+    .suggest-trigger-bar {
+      margin-bottom: 12px;
+      display: flex;
+    }
+    .btn-suggest-trigger {
+      width: 100%;
+      background: #f0fdf4;
+      border: 1px dashed #059669;
+      color: #047857;
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 0.84rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .btn-suggest-trigger:active { background: #d1fae5; }
 
     /* クイック調味料加算 */
     .seasoning-scroller {
@@ -202,7 +215,7 @@
     }
     .delete-btn { color: #94a3b8; background: none; border: none; padding: 2px 6px; font-size: 1.15rem; cursor: pointer; }
 
-    /* ====== 血圧・脈拍入力レイアウト（幅固定・横長防止） ====== */
+    /* 血圧・脈拍入力レイアウト（幅42px固定） */
     .bp-grid { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
@@ -228,7 +241,6 @@
       justify-content: center; 
       gap: 3px; 
     }
-    /* 入力ボックスの幅を固定して横長化を防止 */
     .bp-inputs input.bp-field { 
       flex: 0 0 42px !important;
       width: 42px !important;
@@ -326,13 +338,20 @@
         </div>
       </div>
 
-      <!-- おすすめ食事提案カード -->
+      <!-- 提案カード起動トリガーボタン -->
+      <div class="suggest-trigger-bar">
+        <button type="button" class="btn-suggest-trigger" onclick="requestGeminiSuggestion()">
+          ✨ 今の残り枠に合うおすすめ献立をAIに聞く
+        </button>
+      </div>
+
+      <!-- おすすめ食事提案カード（ボタン押下時に動的展開） -->
       <div class="card suggest-card" id="suggestCard">
         <div class="suggest-head">
-          <div class="suggest-badge" id="suggestBadge">💡 今のおすすめメニュー</div>
-          <button class="suggest-ai-btn" type="button" onclick="requestGeminiSuggestion()">✨ AIで再提案</button>
+          <div class="suggest-badge" id="suggestBadge">💡 AIおすすめメニュー</div>
+          <button class="suggest-ai-btn" type="button" onclick="requestGeminiSuggestion()">🔄 別の提案</button>
         </div>
-        <div class="suggest-title" id="suggestTitle">状況に合わせて読み込み中...</div>
+        <div class="suggest-title" id="suggestTitle">AI栄養士が考え中...</div>
         <ul class="suggest-list" id="suggestList"></ul>
       </div>
 
@@ -374,7 +393,7 @@
         </div>
         <div class="form-group">
           <input type="number" id="foodSalt" placeholder="塩分 (g)" step="0.01" inputmode="decimal">
-          <input type="number" id="foodCal" placeholder="カロリー (kcal)" inputmode="numeric">
+          <input type="number" id="foodCal" placeholder="カロコリー (kcal)" inputmode="numeric">
           <button type="button" class="btn-primary" onclick="addFood()">追加</button>
         </div>
 
@@ -526,17 +545,11 @@
     function playDateSwitchSound() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!audioCtx) {
-          audioCtx = new AudioContext();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
+        if (!audioCtx) audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
         
-        // 心地よい「ポピッ」という二音トーン
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
-        
         osc.type = 'sine';
         const now = audioCtx.currentTime;
         
@@ -551,9 +564,7 @@
 
         osc.start(now);
         osc.stop(now + 0.08);
-      } catch (e) {
-        // 音声非対応環境やミュート時のサイレントキャッチ
-      }
+      } catch (e) {}
     }
 
     function getDefaultCategory() {
@@ -658,10 +669,8 @@
       const view = document.getElementById('viewRecord');
       isAnimating = true;
 
-      // 日付変更サウンドを再生
       playDateSwitchSound();
 
-      // 退場アニメーション
       const exitClass = offset > 0 ? 'slide-exit-left' : 'slide-exit-right';
       const enterClass = offset > 0 ? 'slide-enter-from-right' : 'slide-enter-from-left';
 
@@ -673,15 +682,15 @@
         d.setDate(d.getDate() + offset);
         activeDate = formatDate(d);
 
-        // データを再描画
+        // 日付が変わったら一旦提案カードは畳む（必要なら再度タップで呼び出し）
+        document.getElementById('suggestCard').style.display = 'none';
+
         render();
 
-        // 逆位置に即座に配置してトランジションをリセット
         view.style.transition = 'none';
         view.classList.remove(exitClass);
         view.classList.add(enterClass);
 
-        // アニメーションを再有効化して所定位置に戻す
         requestAnimationFrame(() => {
           setTimeout(() => {
             view.style.transition = 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease';
@@ -698,6 +707,7 @@
       if (selected && selected !== activeDate) {
         playDateSwitchSound();
         activeDate = selected;
+        document.getElementById('suggestCard').style.display = 'none';
         render();
       }
     }
@@ -735,9 +745,6 @@
 
       const calPercent = Math.min(100, (totalCal / MAX_CAL) * 100);
       document.getElementById('calBar').style.width = calPercent + '%';
-
-      // 食事提案の更新
-      updateFoodSuggestions(remainSalt, remainCal, totalSalt);
 
       // 食事リスト
       renderFoodList(dayData);
@@ -946,7 +953,7 @@
         st.innerText = '✓ APIキー設定済み（AI機能利用可能）';
         st.style.color = 'var(--primary)';
       } else {
-        st.innerText = '※ APIキー未設定（設定するとAI自炊計算・日替わり提案が有効になります）';
+        st.innerText = '※ APIキー未設定（設定するとAI計算・提案が有効になります）';
         st.style.color = 'var(--text-sub)';
       }
     }
@@ -958,7 +965,7 @@
         return;
       }
       if (!geminiApiKey) {
-        alert('ページ下部の設定からGemini APIキーを登録してください！');
+        alert('画面最下部の「⚙️ Gemini APIキー設定」からAPIキーを登録してください！');
         return;
       }
 
@@ -981,33 +988,54 @@
         document.getElementById('foodSalt').value = parsed.salt;
         document.getElementById('foodCal').value = parsed.cal;
       } catch (err) {
-        alert('AI推定に失敗しました。キーの確認または手入力してください。');
+        alert('AI推定に失敗しました。APIキーまたは入力を確認してください。');
       }
     }
 
+    // ボタンを押した時だけ呼び出されるAI食事提案
     async function requestGeminiSuggestion() {
+      const suggestCard = document.getElementById('suggestCard');
+      const listElem = document.getElementById('suggestList');
+      const titleElem = document.getElementById('suggestTitle');
+      const badgeElem = document.getElementById('suggestBadge');
+
+      suggestCard.style.display = 'block';
+      listElem.innerHTML = '';
+      titleElem.innerText = 'AI栄養士が状況に合ったメニューを考案中...';
+
+      if (!geminiApiKey) {
+        titleElem.innerText = '⚠️ APIキーが設定されていません';
+        listElem.innerHTML = '<li class="suggest-item" style="color:var(--text-sub);">画面下部の「⚙️ Gemini APIキー設定」からキーを保存すると、この枠にオーダーメイドのメニューが提案されます。</li>';
+        return;
+      }
+
       const dayData = data[activeDate];
       const totalSalt = dayData.foods.reduce((sum, f) => sum + (parseFloat(f.salt) || 0), 0);
       const totalCal = dayData.foods.reduce((sum, f) => sum + (parseInt(f.cal) || 0), 0);
       const remainSalt = Math.max(0, MAX_SALT - totalSalt);
       const remainCal = Math.max(0, MAX_CAL - totalCal);
 
-      if (!geminiApiKey) {
-        fallbackRandomSuggestion(remainSalt, remainCal, totalSalt);
-        return;
+      if (totalSalt >= MAX_SALT) {
+        badgeElem.innerText = '⚠️ 塩分目標到達（排出支援）';
+        badgeElem.style.background = '#fee2e2';
+        badgeElem.style.color = '#b91c1c';
+      } else {
+        badgeElem.innerText = '💡 AIおすすめメニュー';
+        badgeElem.style.background = '#d1fae5';
+        badgeElem.style.color = '#047857';
       }
 
-      const prompt = `あなたは健康管理アプリのAI栄養士です。
-ユーザーの現在状況:
-- 残り塩分枠: ${remainSalt.toFixed(2)}g (1日上限6g)
+      const prompt = `あなたは健康管理アプリ専属の管理栄養士です。
+ユーザーの本日の状況:
+- 残り塩分枠: ${remainSalt.toFixed(2)}g (1日目標6g)
 - 残りカロリー枠: ${remainCal}kcal
-- 状況: ${totalSalt >= MAX_SALT ? '塩分オーバー中（排出・利尿サポートが必要）' : '枠内'}
+- 状況: ${totalSalt >= MAX_SALT ? 'すでに塩分6gオーバー中（カリウム豊富な排出メニューや無塩軽食が必須）' : '目標枠内'}
 
-このユーザーにぴったりな「具体的で美味しそうな食事・メニュー案」を4つ提案してください。
+このユーザーにぴったりな「具体的で美味しそうな食事・おかず・外食の工夫案」を4つ提案してください。
 必ず次のJSON形式のみで回答してください:
 [
-  {"name": "メニュー名やアイデア", "tag": "塩分 約0.4g / 250kcal"},
-  {"name": "メニュー名2", "tag": "塩分 約1.1g / 420kcal"},
+  {"name": "メニュー名や工夫", "tag": "塩分 約0.4g / 250kcal"},
+  {"name": "メニュー名2", "tag": "塩分 約1.0g / 420kcal"},
   {"name": "メニュー名3", "tag": "塩分 約0.2g / 180kcal"},
   {"name": "メニュー名4", "tag": "塩分 0.0g / 80kcal"}
 ]`;
@@ -1023,94 +1051,17 @@
         const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const items = JSON.parse(cleaned);
 
-        const listElem = document.getElementById('suggestList');
-        listElem.innerHTML = '';
-        document.getElementById('suggestTitle').innerText = `✨ AI生成：残り塩分${remainSalt.toFixed(1)}gのおすすめ献立`;
-        items.forEach(it => appendSuggestItem(listElem, it));
+        titleElem.innerText = `残り塩分 ${remainSalt.toFixed(1)}g / カロリー約${remainCal}kcal のおすすめ`;
+        items.forEach(it => {
+          const li = document.createElement('li');
+          li.className = 'suggest-item';
+          li.innerHTML = `<span>${escapeHtml(it.name)}</span><span class="suggest-tag">${escapeHtml(it.tag)}</span>`;
+          listElem.appendChild(li);
+        });
       } catch (err) {
-        fallbackRandomSuggestion(remainSalt, remainCal, totalSalt);
+        titleElem.innerText = '提案の取得に失敗しました';
+        listElem.innerHTML = '<li class="suggest-item" style="color:var(--text-sub);">通信環境やAPIキーを確認して、もう一度お試しください。</li>';
       }
-    }
-
-    const RECIPE_POOL = {
-      danger: [
-        { name: 'トマトときゅうりの生野菜（レモン果汁がけ）', tag: '塩分 0.0g / 約35kcal' },
-        { name: 'バナナまたはキウイフルーツ（カリウム豊富）', tag: '塩分 0.0g / 約80kcal' },
-        { name: '素焼きアーモンド・くるみ（無塩）', tag: '塩分 0.0g / 約110kcal' },
-        { name: '温かいほうじ茶・麦茶・白湯', tag: '塩分 0.0g / 0kcal' },
-        { name: 'わかめと寒天のノンオイル和え（酢・すりごま）', tag: '塩分 0.1g / 約30kcal' },
-        { name: 'アボカドスライス（わさび・レモン）', tag: '塩分 0.0g / 約160kcal' }
-      ],
-      strict: [
-        { name: '蒸し鶏の薬味和え（生姜・ねぎ・ポン酢少量）', tag: '塩分 約0.4g / 220kcal' },
-        { name: '焼き魚（無塩サバや銀鮭）＋すだち果汁', tag: '塩分 約0.3g / 240kcal' },
-        { name: '湯豆腐・冷奴（かつお節＋減塩醤油少々）', tag: '塩分 約0.4g / 130kcal' },
-        { name: '焼き芋 または ふかし芋（満足感◎無塩）', tag: '塩分 0.0g / 約190kcal' },
-        { name: 'きのこたっぷりのホイル焼き（バター胡椒）', tag: '塩分 約0.3g / 95kcal' },
-        { name: '豚しゃぶサラダ（大根おろし・酢レモン）', tag: '塩分 約0.5g / 280kcal' }
-      ],
-      moderate: [
-        { name: '豚の生姜焼き（ご飯普通盛・味噌汁なし）', tag: '塩分 約1.4g / 580kcal' },
-        { name: '親子丼（つゆ少なめ・七味唐辛子で風味UP）', tag: '塩分 約1.5g / 520kcal' },
-        { name: '焼き鳥3〜4本（タレなし素焼き＋わさび添え）', tag: '塩分 約0.8g / 310kcal' },
-        { name: '海鮮丼（醤油をかけず小皿でちょん付け）', tag: '塩分 約1.2g / 490kcal' },
-        { name: 'オリジン牛焼肉＋生野菜サラダ（ドレッシング控えめ）', tag: '塩分 約2.3g / 540kcal' },
-        { name: 'サバの塩焼き定食（大根おろし＋醤油2滴）', tag: '塩分 約1.6g / 610kcal' }
-      ],
-      generous: [
-        { name: '和定食（焼き魚、小鉢、具だくさん味噌汁、白米）', tag: '塩分 約1.8g / 550kcal' },
-        { name: '赤身肉のステーキ（わさび醤油・グリル野菜）', tag: '塩分 約1.5g / 520kcal' },
-        { name: '水炊き鍋・しゃぶしゃぶ（ポン酢つけダレ調整）', tag: '塩分 約1.7g / 430kcal' },
-        { name: '寿司盛り合わせ（8〜10貫・醤油少量付け）', tag: '塩分 約1.7g / 480kcal' }
-      ]
-    };
-
-    function updateFoodSuggestions(remainSalt, remainCal, totalSalt) {
-      fallbackRandomSuggestion(remainSalt, remainCal, totalSalt);
-    }
-
-    function fallbackRandomSuggestion(remainSalt, remainCal, totalSalt) {
-      const titleElem = document.getElementById('suggestTitle');
-      const listElem = document.getElementById('suggestList');
-      const badgeElem = document.getElementById('suggestBadge');
-      listElem.innerHTML = '';
-
-      let pool = [];
-      if (totalSalt >= MAX_SALT) {
-        badgeElem.innerText = '⚠️ 塩分目標到達（排出モード）';
-        badgeElem.style.background = '#fee2e2';
-        badgeElem.style.color = '#b91c1c';
-        titleElem.innerText = 'カリウム食材と水分で塩分排出をサポート';
-        pool = RECIPE_POOL.danger;
-      } else if (remainSalt < 0.8) {
-        badgeElem.innerText = '🛡️ 塩分セーブモード（残りわずか）';
-        badgeElem.style.background = '#fef3c7';
-        badgeElem.style.color = '#b45309';
-        titleElem.innerText = `残り塩分 ${remainSalt.toFixed(2)}g を守りつつ満足感を得るメニュー`;
-        pool = RECIPE_POOL.strict;
-      } else if (remainSalt < 2.0) {
-        badgeElem.innerText = '🥗 バランス定食モード';
-        badgeElem.style.background = '#d1fae5';
-        badgeElem.style.color = '#047857';
-        titleElem.innerText = `残り塩分 ${remainSalt.toFixed(2)}g / 残り約${remainCal}kcalの適正チョイス`;
-        pool = RECIPE_POOL.moderate;
-      } else {
-        badgeElem.innerText = '✨ 余裕あり（しっかり選べる状態）';
-        badgeElem.style.background = '#e0f2fe';
-        badgeElem.style.color = '#0369a1';
-        titleElem.innerText = '主菜・副菜をしっかり楽しめるメニュー';
-        pool = RECIPE_POOL.generous;
-      }
-
-      const shuffled = [...pool].sort(() => 0.5 - Math.random()).slice(0, 4);
-      shuffled.forEach(it => appendSuggestItem(listElem, it));
-    }
-
-    function appendSuggestItem(container, it) {
-      const li = document.createElement('li');
-      li.className = 'suggest-item';
-      li.innerHTML = `<span>${escapeHtml(it.name)}</span><span class="suggest-tag">${it.tag}</span>`;
-      container.appendChild(li);
     }
 
     // ==========================================
