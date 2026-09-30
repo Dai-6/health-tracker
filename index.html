@@ -267,9 +267,9 @@
     <div id="viewRecord">
       <!-- 日付ナビゲーション -->
       <div class="date-nav">
-        <button class="nav-btn" type="button" onclick="changeDate(-1)">◀ 前日</button>
+        <button class="nav-btn" type="button" onclick="changeDate(-1, false)">◀ 前日</button>
         <input type="date" id="currentDateInput" class="date-input" onchange="onDateSelect(this.value)">
-        <button class="nav-btn" type="button" onclick="changeDate(1)">翌日 ▶</button>
+        <button class="nav-btn" type="button" onclick="changeDate(1, false)">翌日 ▶</button>
       </div>
 
       <!-- メーターカード -->
@@ -426,7 +426,7 @@
       <!-- Gemini APIキー設定（折りたたみ） -->
       <div class="card" style="padding: 10px 14px;">
         <details>
-          <summary style="font-size:0.78rem; font-weight:700; color:var(--text-sub); cursor:pointer;">⚙️️ Gemini APIキー設定（自炊AI計算・提案用）</summary>
+          <summary style="font-size:0.78rem; font-weight:700; color:var(--text-sub); cursor:pointer;">⚙️ Gemini APIキー設定（自炊AI計算・提案用）</summary>
           <div class="settings-box">
             <div style="margin-bottom:6px;">Google AI Studioで取得したAPIキーを入力すると端末内に安全に保存されます：</div>
             <div class="form-group" style="margin-bottom:4px;">
@@ -501,7 +501,7 @@
     let calDisplayMonth = initialDate.getMonth();
 
     // ==========================================
-    // 紙めくり音（ホワイトノイズ合成版 Web Audio）
+    // サウンド処理（iOS Safari対応・使い分け設計）
     // ==========================================
     let audioCtx = null;
 
@@ -518,7 +518,7 @@
       return audioCtx;
     }
 
-    // 初回タップでオーディオをアンロック
+    // 初回タッチアンロック
     function unlockAudio() {
       const ctx = getFreshAudioContext();
       if (ctx && ctx.state === 'suspended') {
@@ -528,12 +528,45 @@
     window.addEventListener('click', unlockAudio, { passive: true, once: true });
     window.addEventListener('touchstart', unlockAudio, { passive: true, once: true });
 
-    // 「シュッ」という紙めくり音を合成生成
-    function playPaperTurnSound() {
+    // 1. カレンダー・ボタン用: 軽やかな「ピポッ」
+    function playBeepSound() {
       try {
         const ctx = getFreshAudioContext();
         if (!ctx) return;
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(() => emitBeep(ctx)).catch(() => {});
+        } else {
+          emitBeep(ctx);
+        }
+      } catch (e) {}
+    }
 
+    function emitBeep(ctx) {
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        const now = ctx.currentTime;
+
+        osc.frequency.setValueAtTime(620, now);
+        osc.frequency.exponentialRampToValueAtTime(1050, now + 0.05);
+
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.07);
+      } catch (err) {}
+    }
+
+    // 2. スワイプ用: かすれた繊細な「紙めくり音（ササッ）」
+    function playPaperFlickSound() {
+      try {
+        const ctx = getFreshAudioContext();
+        if (!ctx) return;
         if (ctx.state === 'suspended') {
           ctx.resume().then(() => emitPaperTone(ctx)).catch(() => {});
         } else {
@@ -544,12 +577,11 @@
 
     function emitPaperTone(ctx) {
       try {
-        const duration = 0.14; // 約0.14秒の素早い「シュッ」
-        const bufferSize = ctx.sampleRate * duration;
+        const duration = 0.11; // 0.11秒の素早い掠れ音
+        const bufferSize = Math.floor(ctx.sampleRate * duration);
         const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
 
-        // ホワイトノイズ生成
         for (let i = 0; i < bufferSize; i++) {
           output[i] = Math.random() * 2 - 1;
         }
@@ -557,22 +589,26 @@
         const whiteNoise = ctx.createBufferSource();
         whiteNoise.buffer = noiseBuffer;
 
-        // 紙の摩擦音を作るバンドパスフィルター（中高域 1200Hz〜2400Hzを強調）
-        const filter = ctx.createBiquadFilter();
-        filter.type = 'bandpass';
-        filter.frequency.setValueAtTime(1400, ctx.currentTime);
-        filter.frequency.exponentialRampToValueAtTime(2200, ctx.currentTime + duration * 0.5);
-        filter.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + duration);
-        filter.Q.value = 1.2;
+        // ハイパスフィルターで重い音を完全カット（1800Hz以下を落とす）
+        const highpass = ctx.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.setValueAtTime(1800, ctx.currentTime);
 
-        // 音量の立ち上がりと素早い減衰（シュッ感）
+        // バンドパスフィルターで紙の擦れ成分（3200Hz付近）を浮き立たせる
+        const bandpass = ctx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.setValueAtTime(3200, ctx.currentTime);
+        bandpass.Q.value = 1.5;
+
+        // 音量を強すぎない優しいレベル（0.07）に抑えてフェードアウト
         const gainNode = ctx.createGain();
         gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.18, ctx.currentTime + 0.03);
+        gainNode.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.02);
         gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
 
-        whiteNoise.connect(filter);
-        filter.connect(gainNode);
+        whiteNoise.connect(highpass);
+        highpass.connect(bandpass);
+        bandpass.connect(gainNode);
         gainNode.connect(ctx.destination);
 
         whiteNoise.start(ctx.currentTime);
@@ -668,21 +704,25 @@
 
         if (Math.abs(diffX) > Math.abs(diffY) * 1.3 && Math.abs(diffX) > 40) {
           if (diffX < 0) {
-            changeDate(1);
+            changeDate(1, true);  // スワイプによる日付移動（紙めくり音）
           } else {
-            changeDate(-1);
+            changeDate(-1, true); // スワイプによる日付移動（紙めくり音）
           }
         }
       }
     }, { passive: true });
 
-    function changeDate(offset) {
+    // isSwipe: スワイプなら紙めくり音、ボタン等ならピポッ音
+    function changeDate(offset, isSwipe = false) {
       if (isAnimating) return;
       const view = document.getElementById('viewRecord');
       isAnimating = true;
 
-      // 紙めくり音（シュッ）
-      playPaperTurnSound();
+      if (isSwipe) {
+        playPaperFlickSound(); // 掠れた紙めくり音
+      } else {
+        playBeepSound();       // ピポッ音
+      }
 
       const exitClass = offset > 0 ? 'slide-exit-left' : 'slide-exit-right';
       const enterClass = offset > 0 ? 'slide-enter-from-right' : 'slide-enter-from-left';
@@ -717,7 +757,7 @@
 
     function onDateSelect(selected) {
       if (selected && selected !== activeDate) {
-        playPaperTurnSound();
+        playBeepSound();
         activeDate = selected;
         document.getElementById('suggestCard').style.display = 'none';
         render();
@@ -1104,7 +1144,7 @@
           li.className = 'diary-card';
           li.onclick = () => {
             activeDate = d;
-            playPaperTurnSound();
+            playBeepSound(); // カレンダー・タイムラインからのジャンプはピポッ音
             switchView('record');
           };
           li.innerHTML = `
@@ -1174,7 +1214,7 @@
         calDisplayMonth = 0;
         calDisplayYear += 1;
       }
-      playPaperTurnSound();
+      playBeepSound(); // カレンダーの月切り替えはピポッ音
       renderCalendar();
     }
 
@@ -1238,7 +1278,7 @@
 
         cell.onclick = () => {
           activeDate = dStr;
-          playPaperTurnSound();
+          playBeepSound(); // カレンダーの日付タップはピポッ音
           switchView('record');
         };
 
