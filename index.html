@@ -47,6 +47,24 @@
       position: relative;
     }
 
+    /* 初回アンロック通知バー */
+    .audio-notice-bar {
+      background: #e0f2fe;
+      border: 1px solid #7dd3fc;
+      color: #0369a1;
+      padding: 8px 12px;
+      border-radius: 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-align: center;
+      margin-bottom: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
     /* メインタブバー */
     .top-tab-bar {
       display: flex; gap: 8px; margin-bottom: 12px;
@@ -257,6 +275,11 @@
 <body>
   <div class="container" id="appRoot">
     
+    <!-- 初回音声アンロック用バー（タップで即消滅） -->
+    <div class="audio-notice-bar" id="audioUnlockBanner" onclick="manualUnlockAudio()">
+      🔊 ここをタップしてサウンド・スワイプ音を有効化
+    </div>
+
     <!-- トップタブ（記録 / 日記・振り返り） -->
     <div class="top-tab-bar">
       <button type="button" class="top-tab-btn active" id="tabViewRecord" onclick="switchView('record')">📝 今日の記録</button>
@@ -502,7 +525,6 @@
 
     // ==========================================
     // iOS Safari 堅牢版 Web Audio サウンド処理
-    // （touchstart即時アンロック対応）
     // ==========================================
     let audioCtx = null;
     let isAudioUnlocked = false;
@@ -517,31 +539,27 @@
       return audioCtx;
     }
 
-    // 画面に指が触れた瞬間（スワイプの開始時点）に無音再生してiOSのロックを解除
-    function unlockAudioImmediate() {
-      if (isAudioUnlocked) return;
+    // 画面タップで確実にアンロック
+    function manualUnlockAudio() {
       try {
         const ctx = getFreshAudioContext();
-        if (!ctx) return;
-
-        if (ctx.state === 'suspended') {
-          ctx.resume();
+        if (ctx) {
+          ctx.resume().then(() => {
+            isAudioUnlocked = true;
+            emitTone(ctx); // タップした瞬間にテスト確認音
+            const banner = document.getElementById('audioUnlockBanner');
+            if (banner) banner.style.display = 'none';
+          }).catch(() => {});
         }
-
-        // 1サンプルの極小無音バッファを再生してiOSの審査をパスさせる
-        const buffer = ctx.createBuffer(1, 1, 22050);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.start(0);
-
-        isAudioUnlocked = true;
       } catch (e) {}
     }
 
-    window.addEventListener('touchstart', unlockAudioImmediate, { passive: true, capture: true });
-    window.addEventListener('touchend', unlockAudioImmediate, { passive: true, capture: true });
-    window.addEventListener('click', unlockAudioImmediate, { passive: true, capture: true });
+    // 画面全体のどこかをタップしてもアンロックし、バナーを非表示にする
+    document.addEventListener('click', function() {
+      if (!isAudioUnlocked) {
+        manualUnlockAudio();
+      }
+    }, { passive: true });
 
     function playDateSwitchSound() {
       try {
@@ -647,7 +665,6 @@
     let touchStartY = 0;
 
     window.addEventListener('touchstart', function(e) {
-      unlockAudioImmediate();
       if (e.touches && e.touches.length > 0) {
         touchStartX = e.touches[0].clientX;
         touchStartY = e.touches[0].clientY;
