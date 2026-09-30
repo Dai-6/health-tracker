@@ -59,25 +59,25 @@
     }
     .top-tab-btn.active { background: #fff; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
 
-    /* スワイプ切り替えラッパー */
+    /* スワイプ切り替えアニメーション */
     #viewRecord {
-      transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease;
+      transition: transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease;
       will-change: transform, opacity;
     }
-    .slide-out-left {
-      transform: translateX(-35px);
+    .slide-exit-left {
+      transform: translateX(-40px);
       opacity: 0;
     }
-    .slide-out-right {
-      transform: translateX(35px);
+    .slide-exit-right {
+      transform: translateX(40px);
       opacity: 0;
     }
-    .slide-in-right {
-      transform: translateX(35px);
+    .slide-enter-from-right {
+      transform: translateX(40px);
       opacity: 0;
     }
-    .slide-in-left {
-      transform: translateX(-35px);
+    .slide-enter-from-left {
+      transform: translateX(-40px);
       opacity: 0;
     }
 
@@ -202,7 +202,7 @@
     }
     .delete-btn { color: #94a3b8; background: none; border: none; padding: 2px 6px; font-size: 1.15rem; cursor: pointer; }
 
-    /* ====== 血圧・脈拍レイアウトの最適化 ====== */
+    /* ====== 血圧・脈拍入力レイアウト（幅固定・横長防止） ====== */
     .bp-grid { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
@@ -213,7 +213,7 @@
       background: #f8fafc; 
       border: 1px solid var(--border); 
       border-radius: 12px; 
-      padding: 10px 8px; 
+      padding: 10px 4px; 
     }
     .bp-title { 
       font-size: 0.75rem; 
@@ -228,26 +228,27 @@
       justify-content: center; 
       gap: 3px; 
     }
-    .bp-inputs input { 
-      flex: 1 1 0;
-      min-width: 0;
-      width: 100%;
-      max-width: 44px;
-      padding: 7px 2px; 
-      text-align: center; 
-      font-size: 0.86rem; 
-      font-weight: 600;
+    /* 入力ボックスの幅を固定して横長化を防止 */
+    .bp-inputs input.bp-field { 
+      flex: 0 0 42px !important;
+      width: 42px !important;
+      min-width: 42px !important;
+      max-width: 42px !important;
+      padding: 6px 0 !important; 
+      text-align: center !important; 
+      font-size: 0.86rem !important; 
+      font-weight: 700 !important;
     }
     .bp-divider {
       color: var(--text-sub);
       font-weight: 700;
-      font-size: 0.82rem;
+      font-size: 0.85rem;
       user-select: none;
     }
     .bp-pulse-box {
       border-left: 1px dashed #cbd5e1;
-      padding-left: 3px;
-      margin-left: 1px;
+      padding-left: 4px;
+      margin-left: 2px;
       display: flex;
       align-items: center;
     }
@@ -393,11 +394,11 @@
           <div class="bp-box">
             <div class="bp-title">☀️ 朝の血圧 / 脈拍</div>
             <div class="bp-inputs">
-              <input type="number" id="bpSysMorning" placeholder="上" inputmode="numeric">
+              <input type="number" id="bpSysMorning" class="bp-field" placeholder="上" inputmode="numeric">
               <span class="bp-divider">/</span>
-              <input type="number" id="bpDiaMorning" placeholder="下" inputmode="numeric">
+              <input type="number" id="bpDiaMorning" class="bp-field" placeholder="下" inputmode="numeric">
               <div class="bp-pulse-box">
-                <input type="number" id="pulseMorning" placeholder="脈" inputmode="numeric">
+                <input type="number" id="pulseMorning" class="bp-field" placeholder="脈" inputmode="numeric">
               </div>
             </div>
           </div>
@@ -406,11 +407,11 @@
           <div class="bp-box">
             <div class="bp-title">🌙 夜の血圧 / 脈拍</div>
             <div class="bp-inputs">
-              <input type="number" id="bpSysEvening" placeholder="上" inputmode="numeric">
+              <input type="number" id="bpSysEvening" class="bp-field" placeholder="上" inputmode="numeric">
               <span class="bp-divider">/</span>
-              <input type="number" id="bpDiaEvening" placeholder="下" inputmode="numeric">
+              <input type="number" id="bpDiaEvening" class="bp-field" placeholder="下" inputmode="numeric">
               <div class="bp-pulse-box">
-                <input type="number" id="pulseEvening" placeholder="脈" inputmode="numeric">
+                <input type="number" id="pulseEvening" class="bp-field" placeholder="脈" inputmode="numeric">
               </div>
             </div>
           </div>
@@ -518,6 +519,43 @@
     let currentView = 'record';
     let isAnimating = false;
 
+    // ==========================================
+    // 効果音生成（Web Audio API）
+    // ==========================================
+    let audioCtx = null;
+    function playDateSwitchSound() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!audioCtx) {
+          audioCtx = new AudioContext();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        
+        // 心地よい「ポピッ」という二音トーン
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        const now = audioCtx.currentTime;
+        
+        osc.frequency.setValueAtTime(580, now);
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc.start(now);
+        osc.stop(now + 0.08);
+      } catch (e) {
+        // 音声非対応環境やミュート時のサイレントキャッチ
+      }
+    }
+
     function getDefaultCategory() {
       const hour = new Date().getHours();
       if (hour < 10) return 'breakfast';
@@ -605,7 +643,7 @@
         const diffX = touchEndX - touchStartX;
         const diffY = touchEndY - touchStartY;
 
-        if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 45) {
+        if (Math.abs(diffX) > Math.abs(diffY) * 1.3 && Math.abs(diffX) > 40) {
           if (diffX < 0) {
             changeDate(1);  // 左スワイプ ➔ 翌日
           } else {
@@ -620,10 +658,12 @@
       const view = document.getElementById('viewRecord');
       isAnimating = true;
 
-      // offset > 0 (翌日へ): 左へ抜けて右から入る
-      // offset < 0 (前日へ): 右へ抜けて左から入る
-      const exitClass = offset > 0 ? 'slide-out-left' : 'slide-out-right';
-      const enterClass = offset > 0 ? 'slide-in-right' : 'slide-in-left';
+      // 日付変更サウンドを再生
+      playDateSwitchSound();
+
+      // 退場アニメーション
+      const exitClass = offset > 0 ? 'slide-exit-left' : 'slide-exit-right';
+      const enterClass = offset > 0 ? 'slide-enter-from-right' : 'slide-enter-from-left';
 
       view.classList.add(exitClass);
 
@@ -636,26 +676,27 @@
         // データを再描画
         render();
 
-        // 逆側へセットしてトランジションをリセット
+        // 逆位置に即座に配置してトランジションをリセット
         view.style.transition = 'none';
         view.classList.remove(exitClass);
         view.classList.add(enterClass);
 
-        // 再度トランジションを有効化して自然に戻す
+        // アニメーションを再有効化して所定位置に戻す
         requestAnimationFrame(() => {
           setTimeout(() => {
-            view.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease';
+            view.style.transition = 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.2s ease';
             view.classList.remove(enterClass);
             setTimeout(() => {
               isAnimating = false;
-            }, 230);
+            }, 210);
           }, 20);
         });
-      }, 150);
+      }, 140);
     }
 
     function onDateSelect(selected) {
       if (selected && selected !== activeDate) {
+        playDateSwitchSound();
         activeDate = selected;
         render();
       }
