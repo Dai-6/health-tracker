@@ -113,7 +113,7 @@
     .suggest-card {
       background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
       border: 1px solid #a7f3d0;
-      display: none; /* 初期は非表示、ボタン押下で展開 */
+      display: none;
       margin-bottom: 12px;
     }
     .suggest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -393,7 +393,7 @@
         </div>
         <div class="form-group">
           <input type="number" id="foodSalt" placeholder="塩分 (g)" step="0.01" inputmode="decimal">
-          <input type="number" id="foodCal" placeholder="カロコリー (kcal)" inputmode="numeric">
+          <input type="number" id="foodCal" placeholder="カロリー (kcal)" inputmode="numeric">
           <button type="button" class="btn-primary" onclick="addFood()">追加</button>
         </div>
 
@@ -539,24 +539,41 @@
     let isAnimating = false;
 
     // ==========================================
-    // 効果音生成（Web Audio API）
+    // iOS Safari 対応 Web Audio サウンド処理
     // ==========================================
     let audioCtx = null;
-    function playDateSwitchSound() {
+
+    // iOSの音声制限解除（初回タッチ時に自動起動）
+    function initOrUnlockAudio() {
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!audioCtx) audioCtx = new AudioContext();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        
+        if (!audioCtx && AudioContext) {
+          audioCtx = new AudioContext();
+        }
+        if (audioCtx && audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+      } catch (e) {}
+    }
+    window.addEventListener('touchstart', initOrUnlockAudio, { passive: true });
+    window.addEventListener('click', initOrUnlockAudio, { passive: true });
+
+    function playDateSwitchSound() {
+      try {
+        initOrUnlockAudio();
+        if (!audioCtx) return;
+
         const osc = audioCtx.createOscillator();
         const gain = audioCtx.createGain();
+        
         osc.type = 'sine';
         const now = audioCtx.currentTime;
         
-        osc.frequency.setValueAtTime(580, now);
-        osc.frequency.exponentialRampToValueAtTime(880, now + 0.06);
+        // 軽快な「ポピッ」音（音量を0.2に上げ、周波数変化を明瞭に）
+        osc.frequency.setValueAtTime(600, now);
+        osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
 
-        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.setValueAtTime(0.2, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
         osc.connect(gain);
@@ -682,7 +699,6 @@
         d.setDate(d.getDate() + offset);
         activeDate = formatDate(d);
 
-        // 日付が変わったら一旦提案カードは畳む（必要なら再度タップで呼び出し）
         document.getElementById('suggestCard').style.display = 'none';
 
         render();
@@ -992,7 +1008,6 @@
       }
     }
 
-    // ボタンを押した時だけ呼び出されるAI食事提案
     async function requestGeminiSuggestion() {
       const suggestCard = document.getElementById('suggestCard');
       const listElem = document.getElementById('suggestList');
