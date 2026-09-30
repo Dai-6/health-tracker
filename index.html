@@ -109,12 +109,19 @@
     .bar-fill.danger { background: var(--danger); }
     .danger-text { color: var(--danger) !important; }
 
-    /* 食事提案カード（オンデマンド展開式） */
+    /* 提案トリガーボタン */
+    .suggest-trigger-bar { margin-bottom: 12px; display: flex; }
+    .btn-suggest-trigger {
+      width: 100%; background: #f0fdf4; border: 1px dashed #059669; color: #047857;
+      border-radius: 12px; padding: 10px 14px; font-size: 0.84rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-suggest-trigger:active { background: #d1fae5; }
+
+    /* 食事提案カード */
     .suggest-card {
       background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
-      border: 1px solid #a7f3d0;
-      display: none;
-      margin-bottom: 12px;
+      border: 1px solid #a7f3d0; display: none; margin-bottom: 12px;
     }
     .suggest-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
     .suggest-badge {
@@ -133,29 +140,6 @@
     }
     .suggest-item:last-child { border-bottom: none; }
     .suggest-tag { font-size: 0.74rem; color: #0f766e; font-weight: 600; }
-
-    /* 提案トリガーボタン */
-    .suggest-trigger-bar {
-      margin-bottom: 12px;
-      display: flex;
-    }
-    .btn-suggest-trigger {
-      width: 100%;
-      background: #f0fdf4;
-      border: 1px dashed #059669;
-      color: #047857;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-size: 0.84rem;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: background 0.2s;
-    }
-    .btn-suggest-trigger:active { background: #d1fae5; }
 
     /* クイック調味料加算 */
     .seasoning-scroller {
@@ -215,55 +199,17 @@
     }
     .delete-btn { color: #94a3b8; background: none; border: none; padding: 2px 6px; font-size: 1.15rem; cursor: pointer; }
 
-    /* 血圧・脈拍入力レイアウト（幅42px固定） */
-    .bp-grid { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      gap: 8px; 
-      margin-top: 8px; 
-    }
-    .bp-box { 
-      background: #f8fafc; 
-      border: 1px solid var(--border); 
-      border-radius: 12px; 
-      padding: 10px 4px; 
-    }
-    .bp-title { 
-      font-size: 0.75rem; 
-      font-weight: 700; 
-      color: var(--text-sub); 
-      margin-bottom: 6px; 
-      text-align: center;
-    }
-    .bp-inputs { 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      gap: 3px; 
-    }
+    /* 血圧・脈拍入力（幅42px固定） */
+    .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .bp-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 10px 4px; }
+    .bp-title { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); margin-bottom: 6px; text-align: center; }
+    .bp-inputs { display: flex; align-items: center; justify-content: center; gap: 3px; }
     .bp-inputs input.bp-field { 
-      flex: 0 0 42px !important;
-      width: 42px !important;
-      min-width: 42px !important;
-      max-width: 42px !important;
-      padding: 6px 0 !important; 
-      text-align: center !important; 
-      font-size: 0.86rem !important; 
-      font-weight: 700 !important;
+      flex: 0 0 42px !important; width: 42px !important; min-width: 42px !important; max-width: 42px !important;
+      padding: 6px 0 !important; text-align: center !important; font-size: 0.86rem !important; font-weight: 700 !important;
     }
-    .bp-divider {
-      color: var(--text-sub);
-      font-weight: 700;
-      font-size: 0.85rem;
-      user-select: none;
-    }
-    .bp-pulse-box {
-      border-left: 1px dashed #cbd5e1;
-      padding-left: 4px;
-      margin-left: 2px;
-      display: flex;
-      align-items: center;
-    }
+    .bp-divider { color: var(--text-sub); font-weight: 700; font-size: 0.85rem; user-select: none; }
+    .bp-pulse-box { border-left: 1px dashed #cbd5e1; padding-left: 4px; margin-left: 2px; display: flex; align-items: center; }
 
     /* メモ */
     .memo-area { width: 100%; border-radius: 9px; resize: none; min-height: 55px; line-height: 1.4; padding: 8px; margin-bottom: 6px; font-size: 0.88rem; }
@@ -279,20 +225,26 @@
 
     /* 日記タイムライン画面 */
     .diary-timeline { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-    .diary-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 12px; }
+    .diary-card { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 12px; cursor: pointer; }
     .diary-date { font-weight: 700; font-size: 0.88rem; color: var(--primary); display: flex; justify-content: space-between; margin-bottom: 4px; }
     .diary-metrics { font-size: 0.78rem; color: var(--text-sub); margin-bottom: 6px; display: flex; flex-wrap: wrap; gap: 8px; }
     .diary-text { font-size: 0.85rem; color: var(--text-main); white-space: pre-wrap; line-height: 1.45; }
 
     /* カレンダー（スタンプ） */
-    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; margin-top: 8px; }
+    .cal-nav-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .cal-title-month { font-size: 0.95rem; font-weight: 800; color: var(--text-main); }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
     .cal-header { font-size: 0.72rem; font-weight: 700; color: var(--text-sub); padding: 4px 0; }
     .cal-cell {
-      border: 1px solid var(--border); border-radius: 8px; padding: 4px 0; min-height: 44px;
-      display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 0.72rem;
+      border: 1px solid var(--border); border-radius: 8px; padding: 4px 0; min-height: 48px;
+      display: flex; flex-direction: column; justify-content: space-between; align-items: center; font-size: 0.75rem;
+      cursor: pointer; background: #fff; transition: background 0.15s;
     }
+    .cal-cell:active { background: #e2e8f0; }
+    .cal-cell.is-today { border: 2px solid var(--secondary); }
+    .cal-cell.is-active { background: var(--primary-light); }
     .cal-day { font-weight: 700; }
-    .cal-status { font-size: 0.7rem; }
+    .cal-status { font-size: 0.8rem; font-weight: 800; line-height: 1; }
 
     /* 分析カード */
     .insight-card { background: #eff6ff; border: 1px solid #bfdbfe; color: #1e40af; border-radius: 12px; padding: 12px; font-size: 0.82rem; line-height: 1.45; margin-bottom: 12px; }
@@ -474,7 +426,7 @@
       <!-- Gemini APIキー設定（折りたたみ） -->
       <div class="card" style="padding: 10px 14px;">
         <details>
-          <summary style="font-size:0.78rem; font-weight:700; color:var(--text-sub); cursor:pointer;">⚙️ Gemini APIキー設定（自炊AI計算・提案用）</summary>
+          <summary style="font-size:0.78rem; font-weight:700; color:var(--text-sub); cursor:pointer;">⚙️️ Gemini APIキー設定（自炊AI計算・提案用）</summary>
           <div class="settings-box">
             <div style="margin-bottom:6px;">Google AI Studioで取得したAPIキーを入力すると端末内に安全に保存されます：</div>
             <div class="form-group" style="margin-bottom:4px;">
@@ -497,11 +449,16 @@
         <div id="edemaAnalysisText">データを集計中です。数日記録すると自動で傾向が表示されます。</div>
       </div>
 
-      <!-- 月間達成スタンプカレンダー -->
+      <!-- 月間達成スタンプカレンダー（月送り＆タップ連動） -->
       <div class="card">
         <div class="card-title">
           <span>月間達成カレンダー</span>
-          <span style="font-size:0.74rem; color:var(--text-sub); font-weight:normal;">🟢 6g以下達成 / 🔴 オーバー</span>
+          <span style="font-size:0.74rem; color:var(--text-sub); font-weight:normal;">🟢 6g以下 / 🔴 オーバー</span>
+        </div>
+        <div class="cal-nav-bar">
+          <button class="nav-btn" type="button" onclick="changeCalMonth(-1)">◀ 前月</button>
+          <div class="cal-title-month" id="calMonthTitle">2026年 --月</div>
+          <button class="nav-btn" type="button" onclick="changeCalMonth(1)">翌月 ▶</button>
         </div>
         <div class="cal-grid" id="stampCalendar"></div>
       </div>
@@ -538,50 +495,70 @@
     let currentView = 'record';
     let isAnimating = false;
 
+    // カレンダー表示対象年月
+    const initialDate = new Date();
+    let calDisplayYear = initialDate.getFullYear();
+    let calDisplayMonth = initialDate.getMonth();
+
     // ==========================================
-    // iOS Safari 対応 Web Audio サウンド処理
+    // iOS Safari 堅牢版 Web Audio サウンド処理
+    // （状態破棄・再生成に対応）
     // ==========================================
     let audioCtx = null;
 
-    // iOSの音声制限解除（初回タッチ時に自動起動）
-    function initOrUnlockAudio() {
-      try {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (!audioCtx && AudioContext) {
-          audioCtx = new AudioContext();
-        }
-        if (audioCtx && audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-      } catch (e) {}
+    function getFreshAudioContext() {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return null;
+
+      // 停止・破損したコンテキストなら新しく作り直す
+      if (!audioCtx || audioCtx.state === 'closed') {
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
     }
-    window.addEventListener('touchstart', initOrUnlockAudio, { passive: true });
-    window.addEventListener('click', initOrUnlockAudio, { passive: true });
+
+    // 初回タッチ解除
+    window.addEventListener('touchstart', function() {
+      const ctx = getFreshAudioContext();
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+    }, { passive: true });
 
     function playDateSwitchSound() {
       try {
-        initOrUnlockAudio();
-        if (!audioCtx) return;
+        const ctx = getFreshAudioContext();
+        if (!ctx) return;
 
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        
+        // もしまだsuspendedならその場で再開試行
+        if (ctx.state === 'suspended') {
+          ctx.resume().then(() => emitTone(ctx)).catch(() => {});
+        } else {
+          emitTone(ctx);
+        }
+      } catch (e) {}
+    }
+
+    function emitTone(ctx) {
+      try {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
         osc.type = 'sine';
-        const now = audioCtx.currentTime;
-        
-        // 軽快な「ポピッ」音（音量を0.2に上げ、周波数変化を明瞭に）
+        const now = ctx.currentTime;
+
         osc.frequency.setValueAtTime(600, now);
         osc.frequency.exponentialRampToValueAtTime(1000, now + 0.05);
 
-        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.setValueAtTime(0.22, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
 
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(ctx.destination);
 
         osc.start(now);
         osc.stop(now + 0.08);
-      } catch (e) {}
+      } catch (err) {}
     }
 
     function getDefaultCategory() {
@@ -673,9 +650,9 @@
 
         if (Math.abs(diffX) > Math.abs(diffY) * 1.3 && Math.abs(diffX) > 40) {
           if (diffX < 0) {
-            changeDate(1);  // 左スワイプ ➔ 翌日
+            changeDate(1);
           } else {
-            changeDate(-1); // 右スワイプ ➔ 前日
+            changeDate(-1);
           }
         }
       }
@@ -1106,6 +1083,11 @@
           count++;
           const li = document.createElement('li');
           li.className = 'diary-card';
+          li.onclick = () => {
+            activeDate = d;
+            playDateSwitchSound();
+            switchView('record');
+          };
           li.innerHTML = `
             <div class="diary-date">
               <span>${d}</span>
@@ -1161,24 +1143,43 @@
       }
     }
 
+    // ==========================================
+    // カレンダー月送り ＆ 描画連動
+    // ==========================================
+    function changeCalMonth(offset) {
+      calDisplayMonth += offset;
+      if (calDisplayMonth < 0) {
+        calDisplayMonth = 11;
+        calDisplayYear -= 1;
+      } else if (calDisplayMonth > 11) {
+        calDisplayMonth = 0;
+        calDisplayYear += 1;
+      }
+      playDateSwitchSound();
+      renderCalendar();
+    }
+
     function renderCalendar() {
       const container = document.getElementById('stampCalendar');
       container.innerHTML = '';
 
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = now.getMonth();
+      const titleElem = document.getElementById('calMonthTitle');
+      titleElem.innerText = `${calDisplayYear}年 ${calDisplayMonth + 1}月`;
+
+      const todayStr = formatDate(new Date());
 
       const daysOfWeek = ['日', '月', '火', '水', '木', '金', '土'];
-      daysOfWeek.forEach(d => {
+      daysOfWeek.forEach((d, idx) => {
         const th = document.createElement('div');
         th.className = 'cal-header';
         th.innerText = d;
+        if (idx === 0) th.style.color = 'var(--danger)';
+        if (idx === 6) th.style.color = 'var(--secondary)';
         container.appendChild(th);
       });
 
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
+      const firstDay = new Date(calDisplayYear, calDisplayMonth, 1).getDay();
+      const lastDate = new Date(calDisplayYear, calDisplayMonth + 1, 0).getDate();
 
       for (let i = 0; i < firstDay; i++) {
         const empty = document.createElement('div');
@@ -1186,19 +1187,28 @@
       }
 
       for (let day = 1; day <= lastDate; day++) {
-        const dStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dStr = `${calDisplayYear}-${String(calDisplayMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         const dayItem = data[dStr];
-        const salt = dayItem && dayItem.foods ? dayItem.foods.reduce((s, f) => s + (parseFloat(f.salt) || 0), 0) : null;
+        const salt = dayItem && dayItem.foods && dayItem.foods.length > 0 
+          ? dayItem.foods.reduce((s, f) => s + (parseFloat(f.salt) || 0), 0) 
+          : null;
 
         const cell = document.createElement('div');
         cell.className = 'cal-cell';
-        
+
+        if (dStr === todayStr) {
+          cell.classList.add('is-today');
+        }
+        if (dStr === activeDate) {
+          cell.classList.add('is-active');
+        }
+
         let statusHtml = '<span style="color:#cbd5e1;">-</span>';
-        if (salt !== null && salt > 0) {
+        if (salt !== null) {
           if (salt <= MAX_SALT) {
-            statusHtml = '<span style="color:var(--success); font-weight:800;">○</span>';
+            statusHtml = '<span style="color:var(--success);">○</span>';
           } else {
-            statusHtml = '<span style="color:var(--danger); font-weight:800;">●</span>';
+            statusHtml = '<span style="color:var(--danger);">●</span>';
           }
         }
 
@@ -1206,6 +1216,13 @@
           <span class="cal-day">${day}</span>
           <span class="cal-status">${statusHtml}</span>
         `;
+
+        cell.onclick = () => {
+          activeDate = dStr;
+          playDateSwitchSound();
+          switchView('record');
+        };
+
         container.appendChild(cell);
       }
     }
