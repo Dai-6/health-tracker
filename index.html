@@ -39,8 +39,13 @@
       color: var(--text-main); 
       padding: 14px 12px 90px 12px; 
       -webkit-tap-highlight-color: transparent; 
+      overflow-x: hidden;
     }
-    .container { max-width: 480px; margin: 0 auto; }
+    .container { 
+      max-width: 480px; 
+      margin: 0 auto; 
+      position: relative;
+    }
 
     /* メインタブバー */
     .top-tab-bar {
@@ -53,6 +58,28 @@
       transition: all 0.2s ease;
     }
     .top-tab-btn.active { background: #fff; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+
+    /* スワイプ切り替えラッパー */
+    #viewRecord {
+      transition: transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease;
+      will-change: transform, opacity;
+    }
+    .slide-out-left {
+      transform: translateX(-35px);
+      opacity: 0;
+    }
+    .slide-out-right {
+      transform: translateX(35px);
+      opacity: 0;
+    }
+    .slide-in-right {
+      transform: translateX(35px);
+      opacity: 0;
+    }
+    .slide-in-left {
+      transform: translateX(-35px);
+      opacity: 0;
+    }
 
     /* 日付ナビゲーション */
     .date-nav {
@@ -144,7 +171,7 @@
     }
     .cat-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    /* フォーム */
+    /* フォーム基本 */
     .form-group { display: flex; gap: 6px; margin-bottom: 7px; }
     input, textarea {
       flex: 1; min-width: 0; padding: 10px 11px; border: 1px solid var(--border);
@@ -175,12 +202,55 @@
     }
     .delete-btn { color: #94a3b8; background: none; border: none; padding: 2px 6px; font-size: 1.15rem; cursor: pointer; }
 
-    /* 体調・血圧・体重グリッド */
-    .bp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 6px; }
-    .bp-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
-    .bp-title { font-size: 0.75rem; font-weight: 700; color: var(--text-sub); margin-bottom: 4px; }
-    .bp-inputs { display: flex; gap: 4px; align-items: center; }
-    .bp-inputs input { padding: 6px 4px; text-align: center; font-size: 0.85rem; }
+    /* ====== 血圧・脈拍レイアウトの最適化 ====== */
+    .bp-grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 8px; 
+      margin-top: 8px; 
+    }
+    .bp-box { 
+      background: #f8fafc; 
+      border: 1px solid var(--border); 
+      border-radius: 12px; 
+      padding: 10px 8px; 
+    }
+    .bp-title { 
+      font-size: 0.75rem; 
+      font-weight: 700; 
+      color: var(--text-sub); 
+      margin-bottom: 6px; 
+      text-align: center;
+    }
+    .bp-inputs { 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      gap: 3px; 
+    }
+    .bp-inputs input { 
+      flex: 1 1 0;
+      min-width: 0;
+      width: 100%;
+      max-width: 44px;
+      padding: 7px 2px; 
+      text-align: center; 
+      font-size: 0.86rem; 
+      font-weight: 600;
+    }
+    .bp-divider {
+      color: var(--text-sub);
+      font-weight: 700;
+      font-size: 0.82rem;
+      user-select: none;
+    }
+    .bp-pulse-box {
+      border-left: 1px dashed #cbd5e1;
+      padding-left: 3px;
+      margin-left: 1px;
+      display: flex;
+      align-items: center;
+    }
 
     /* メモ */
     .memo-area { width: 100%; border-radius: 9px; resize: none; min-height: 55px; line-height: 1.4; padding: 8px; margin-bottom: 6px; font-size: 0.88rem; }
@@ -319,22 +389,29 @@
         </div>
         
         <div class="bp-grid">
+          <!-- 朝の血圧 -->
           <div class="bp-box">
-            <div class="bp-title">朝の血圧 / 脈拍</div>
+            <div class="bp-title">☀️ 朝の血圧 / 脈拍</div>
             <div class="bp-inputs">
               <input type="number" id="bpSysMorning" placeholder="上" inputmode="numeric">
-              <span>/</span>
+              <span class="bp-divider">/</span>
               <input type="number" id="bpDiaMorning" placeholder="下" inputmode="numeric">
-              <input type="number" id="pulseMorning" placeholder="脈" inputmode="numeric">
+              <div class="bp-pulse-box">
+                <input type="number" id="pulseMorning" placeholder="脈" inputmode="numeric">
+              </div>
             </div>
           </div>
+
+          <!-- 夜の血圧 -->
           <div class="bp-box">
-            <div class="bp-title">夜の血圧 / 脈拍</div>
+            <div class="bp-title">🌙 夜の血圧 / 脈拍</div>
             <div class="bp-inputs">
               <input type="number" id="bpSysEvening" placeholder="上" inputmode="numeric">
-              <span>/</span>
+              <span class="bp-divider">/</span>
               <input type="number" id="bpDiaEvening" placeholder="下" inputmode="numeric">
-              <input type="number" id="pulseEvening" placeholder="脈" inputmode="numeric">
+              <div class="bp-pulse-box">
+                <input type="number" id="pulseEvening" placeholder="脈" inputmode="numeric">
+              </div>
             </div>
           </div>
         </div>
@@ -439,6 +516,7 @@
     let chartMode = 'both';
     let currentCategory = getDefaultCategory();
     let currentView = 'record';
+    let isAnimating = false;
 
     function getDefaultCategory() {
       const hour = new Date().getHours();
@@ -504,7 +582,7 @@
     ];
 
     // ==========================================
-    // 全画面スワイプ処理
+    // 全画面スワイプ＆スライドアニメーション処理
     // ==========================================
     let touchStartX = 0;
     let touchStartY = 0;
@@ -517,7 +595,7 @@
     }, { passive: true });
 
     window.addEventListener('touchend', function(e) {
-      if (currentView !== 'record') return;
+      if (currentView !== 'record' || isAnimating) return;
       const tag = e.target.tagName ? e.target.tagName.toLowerCase() : '';
       if (tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button') return;
 
@@ -527,8 +605,7 @@
         const diffX = touchEndX - touchStartX;
         const diffY = touchEndY - touchStartY;
 
-        // 縦スクロールと明確に区別（左右方向への動きが大きく、50px以上動いた時のみ）
-        if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 50) {
+        if (Math.abs(diffX) > Math.abs(diffY) * 1.5 && Math.abs(diffX) > 45) {
           if (diffX < 0) {
             changeDate(1);  // 左スワイプ ➔ 翌日
           } else {
@@ -537,6 +614,52 @@
         }
       }
     }, { passive: true });
+
+    function changeDate(offset) {
+      if (isAnimating) return;
+      const view = document.getElementById('viewRecord');
+      isAnimating = true;
+
+      // offset > 0 (翌日へ): 左へ抜けて右から入る
+      // offset < 0 (前日へ): 右へ抜けて左から入る
+      const exitClass = offset > 0 ? 'slide-out-left' : 'slide-out-right';
+      const enterClass = offset > 0 ? 'slide-in-right' : 'slide-in-left';
+
+      view.classList.add(exitClass);
+
+      setTimeout(() => {
+        const parts = activeDate.split('-');
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        d.setDate(d.getDate() + offset);
+        activeDate = formatDate(d);
+
+        // データを再描画
+        render();
+
+        // 逆側へセットしてトランジションをリセット
+        view.style.transition = 'none';
+        view.classList.remove(exitClass);
+        view.classList.add(enterClass);
+
+        // 再度トランジションを有効化して自然に戻す
+        requestAnimationFrame(() => {
+          setTimeout(() => {
+            view.style.transition = 'transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.22s ease';
+            view.classList.remove(enterClass);
+            setTimeout(() => {
+              isAnimating = false;
+            }, 230);
+          }, 20);
+        });
+      }, 150);
+    }
+
+    function onDateSelect(selected) {
+      if (selected && selected !== activeDate) {
+        activeDate = selected;
+        render();
+      }
+    }
 
     // ==========================================
     // メイン描画
@@ -698,21 +821,6 @@
       document.getElementById('bpSysEvening').value = dayData.bpSysEvening || '';
       document.getElementById('bpDiaEvening').value = dayData.bpDiaEvening || '';
       document.getElementById('pulseEvening').value = dayData.pulseEvening || '';
-    }
-
-    function changeDate(offset) {
-      const parts = activeDate.split('-');
-      const d = new Date(parts[0], parts[1] - 1, parts[2]);
-      d.setDate(d.getDate() + offset);
-      activeDate = formatDate(d);
-      render();
-    }
-
-    function onDateSelect(selected) {
-      if (selected) {
-        activeDate = selected;
-        render();
-      }
     }
 
     function addFood() {
