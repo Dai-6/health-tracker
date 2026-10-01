@@ -290,7 +290,7 @@
         </div>
       </div>
 
-      <!-- 提案カード起動トリガーボタン -->
+      <!-- 提案トリガーボタン -->
       <div class="suggest-trigger-bar">
         <button type="button" class="btn-suggest-trigger" onclick="requestGeminiSuggestion()">
           ✨ 今の残り枠に合うおすすめ献立をAIに聞く
@@ -363,7 +363,7 @@
         <div class="bp-grid">
           <!-- 朝の血圧 -->
           <div class="bp-box">
-            <div class="bp-title">☀️️ 朝の血圧 / 脈拍</div>
+            <div class="bp-title">☀️ 朝の血圧 / 脈拍</div>
             <div class="bp-inputs">
               <input type="number" id="bpSysMorning" class="bp-field" placeholder="上" inputmode="numeric">
               <span class="bp-divider">/</span>
@@ -980,7 +980,7 @@
     }
 
     // ==========================================
-    // Gemini API 呼び出し共通関数（最新モデル自動選択）
+    // Gemini API 呼び出し（最新安定モデル直接指定）
     // ==========================================
     function saveApiKey() {
       const val = document.getElementById('geminiApiKeyInput').value.trim();
@@ -1006,8 +1006,8 @@
     async function callGeminiApi(promptText) {
       if (!geminiApiKey) throw new Error('APIキーが未設定です。画面下部で登録してください。');
 
-      // 安定して動作する順にモデルを試行
-      const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro'];
+      // 確実に提供されている最新安定モデル
+      const models = ['gemini-2.5-flash', 'gemini-2.0-flash'];
       let lastError = null;
 
       for (const model of models) {
@@ -1035,7 +1035,6 @@
           }
         } catch (err) {
           lastError = err;
-          // 次のモデルでリトライ
         }
       }
       throw lastError || new Error('通信に失敗しました。');
