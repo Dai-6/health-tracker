@@ -341,7 +341,7 @@
 
         <div class="form-group">
           <input type="text" id="foodName" placeholder="料理名・自炊食材 (例: 豚肉の生姜焼き)">
-          <button type="button" class="btn-ai" onclick="estimateWithGemini()">✨ AI計算</button>
+          <button type="button" class="btn-ai" id="btnFoodAi" onclick="estimateWithGemini()">✨ AI計算</button>
         </div>
         <div class="form-group">
           <input type="number" id="foodSalt" placeholder="塩分 (g)" step="0.01" inputmode="decimal">
@@ -363,7 +363,7 @@
         <div class="bp-grid">
           <!-- 朝の血圧 -->
           <div class="bp-box">
-            <div class="bp-title">☀️ 朝の血圧 / 脈拍</div>
+            <div class="bp-title">☀️️ 朝の血圧 / 脈拍</div>
             <div class="bp-inputs">
               <input type="number" id="bpSysMorning" class="bp-field" placeholder="上" inputmode="numeric">
               <span class="bp-divider">/</span>
@@ -501,7 +501,7 @@
     let calDisplayMonth = initialDate.getMonth();
 
     // ==========================================
-    // サウンド処理（iOS Safari対応・使い分け設計）
+    // サウンド処理（iOS Safari対応）
     // ==========================================
     let audioCtx = null;
 
@@ -518,7 +518,6 @@
       return audioCtx;
     }
 
-    // 初回タッチアンロック
     function unlockAudio() {
       const ctx = getFreshAudioContext();
       if (ctx && ctx.state === 'suspended') {
@@ -528,7 +527,6 @@
     window.addEventListener('click', unlockAudio, { passive: true, once: true });
     window.addEventListener('touchstart', unlockAudio, { passive: true, once: true });
 
-    // 1. カレンダー・ボタン用: 軽やかな「ピポッ」
     function playBeepSound() {
       try {
         const ctx = getFreshAudioContext();
@@ -562,7 +560,6 @@
       } catch (err) {}
     }
 
-    // 2. スワイプ用: かすれた繊細な「紙めくり音（ササッ）」
     function playPaperFlickSound() {
       try {
         const ctx = getFreshAudioContext();
@@ -577,7 +574,7 @@
 
     function emitPaperTone(ctx) {
       try {
-        const duration = 0.11; // 0.11秒の素早い掠れ音
+        const duration = 0.11;
         const bufferSize = Math.floor(ctx.sampleRate * duration);
         const noiseBuffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const output = noiseBuffer.getChannelData(0);
@@ -589,18 +586,15 @@
         const whiteNoise = ctx.createBufferSource();
         whiteNoise.buffer = noiseBuffer;
 
-        // ハイパスフィルターで重い音を完全カット（1800Hz以下を落とす）
         const highpass = ctx.createBiquadFilter();
         highpass.type = 'highpass';
         highpass.frequency.setValueAtTime(1800, ctx.currentTime);
 
-        // バンドパスフィルターで紙の擦れ成分（3200Hz付近）を浮き立たせる
         const bandpass = ctx.createBiquadFilter();
         bandpass.type = 'bandpass';
         bandpass.frequency.setValueAtTime(3200, ctx.currentTime);
         bandpass.Q.value = 1.5;
 
-        // 音量を強すぎない優しいレベル（0.07）に抑えてフェードアウト
         const gainNode = ctx.createGain();
         gainNode.gain.setValueAtTime(0.001, ctx.currentTime);
         gainNode.gain.linearRampToValueAtTime(0.07, ctx.currentTime + 0.02);
@@ -704,24 +698,23 @@
 
         if (Math.abs(diffX) > Math.abs(diffY) * 1.3 && Math.abs(diffX) > 40) {
           if (diffX < 0) {
-            changeDate(1, true);  // スワイプによる日付移動（紙めくり音）
+            changeDate(1, true);
           } else {
-            changeDate(-1, true); // スワイプによる日付移動（紙めくり音）
+            changeDate(-1, true);
           }
         }
       }
     }, { passive: true });
 
-    // isSwipe: スワイプなら紙めくり音、ボタン等ならピポッ音
     function changeDate(offset, isSwipe = false) {
       if (isAnimating) return;
       const view = document.getElementById('viewRecord');
       isAnimating = true;
 
       if (isSwipe) {
-        playPaperFlickSound(); // 掠れた紙めくり音
+        playPaperFlickSound();
       } else {
-        playBeepSound();       // ピポッ音
+        playBeepSound();
       }
 
       const exitClass = offset > 0 ? 'slide-exit-left' : 'slide-exit-right';
@@ -987,7 +980,7 @@
     }
 
     // ==========================================
-    // Gemini API 連携（自炊計算 ＆ 提案）
+    // Gemini API 呼び出し共通関数（最新モデル自動選択）
     // ==========================================
     function saveApiKey() {
       const val = document.getElementById('geminiApiKeyInput').value.trim();
@@ -1010,8 +1003,47 @@
       }
     }
 
+    async function callGeminiApi(promptText) {
+      if (!geminiApiKey) throw new Error('APIキーが未設定です。画面下部で登録してください。');
+
+      // 安定して動作する順にモデルを試行
+      const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-pro'];
+      let lastError = null;
+
+      for (const model of models) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }]
+            })
+          });
+
+          if (!res.ok) {
+            const errJson = await res.json().catch(() => ({}));
+            const msg = errJson.error ? errJson.error.message : `HTTPエラー ${res.status}`;
+            throw new Error(msg);
+          }
+
+          const json = await res.json();
+          if (json.candidates && json.candidates[0] && json.candidates[0].content) {
+            return json.candidates[0].content.parts[0].text;
+          } else {
+            throw new Error('回答が生成されませんでした。');
+          }
+        } catch (err) {
+          lastError = err;
+          // 次のモデルでリトライ
+        }
+      }
+      throw lastError || new Error('通信に失敗しました。');
+    }
+
     async function estimateWithGemini() {
       const query = document.getElementById('foodName').value.trim();
+      const btn = document.getElementById('btnFoodAi');
       if (!query) {
         alert('料理名や材料を入力してください（例: 豚肉の生姜焼き、玉ねぎ半分）');
         return;
@@ -1021,26 +1053,27 @@
         return;
       }
 
+      const originalBtnText = btn.innerText;
+      btn.innerText = '計算中...';
+      btn.disabled = true;
+
       const prompt = `あなたは管理栄養士です。次の料理または材料から、一般的な1人前の「食塩相当量(g)」と「カロリー(kcal)」を推定してください。
 料理名・材料: "${query}"
 必ず以下のJSON形式のみで回答してください。Markdownや他の文字は一切含めないでください:
 {"salt": 1.2, "cal": 350}`;
 
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const json = await res.json();
-        const text = json.candidates[0].content.parts[0].text;
-        const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const text = await callGeminiApi(prompt);
+        const cleaned = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
         const parsed = JSON.parse(cleaned);
 
         document.getElementById('foodSalt').value = parsed.salt;
         document.getElementById('foodCal').value = parsed.cal;
       } catch (err) {
-        alert('AI推定に失敗しました。APIキーまたは入力を確認してください。');
+        alert('AI計算エラー: ' + err.message);
+      } finally {
+        btn.innerText = originalBtnText;
+        btn.disabled = false;
       }
     }
 
@@ -1092,14 +1125,8 @@
 ]`;
 
       try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const json = await res.json();
-        const text = json.candidates[0].content.parts[0].text;
-        const cleaned = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const text = await callGeminiApi(prompt);
+        const cleaned = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
         const items = JSON.parse(cleaned);
 
         titleElem.innerText = `残り塩分 ${remainSalt.toFixed(1)}g / カロリー約${remainCal}kcal のおすすめ`;
@@ -1111,7 +1138,7 @@
         });
       } catch (err) {
         titleElem.innerText = '提案の取得に失敗しました';
-        listElem.innerHTML = '<li class="suggest-item" style="color:var(--text-sub);">通信環境やAPIキーを確認して、もう一度お試しください。</li>';
+        listElem.innerHTML = `<li class="suggest-item" style="color:var(--danger); font-size:0.75rem;">エラー詳細: ${escapeHtml(err.message)}</li>`;
       }
     }
 
@@ -1144,7 +1171,7 @@
           li.className = 'diary-card';
           li.onclick = () => {
             activeDate = d;
-            playBeepSound(); // カレンダー・タイムラインからのジャンプはピポッ音
+            playBeepSound();
             switchView('record');
           };
           li.innerHTML = `
@@ -1214,7 +1241,7 @@
         calDisplayMonth = 0;
         calDisplayYear += 1;
       }
-      playBeepSound(); // カレンダーの月切り替えはピポッ音
+      playBeepSound();
       renderCalendar();
     }
 
@@ -1278,7 +1305,7 @@
 
         cell.onclick = () => {
           activeDate = dStr;
-          playBeepSound(); // カレンダーの日付タップはピポッ音
+          playBeepSound();
           switchView('record');
         };
 
