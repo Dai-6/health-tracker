@@ -980,7 +980,7 @@
     }
 
     // ==========================================
-    // Gemini API 呼び出し（最新自動追従 ＋ 安定版フォールバック）
+    // Gemini API 呼び出し（API指定モデル対応）
     // ==========================================
     function saveApiKey() {
       const val = document.getElementById('geminiApiKeyInput').value.trim();
@@ -1006,9 +1006,8 @@
     async function callGeminiApi(promptText) {
       if (!geminiApiKey) throw new Error('APIキーが未設定です。画面下部で登録してください。');
 
-      // 1. 最新自動追従エイリアスを最優先
-      // 2. 弾かれた場合は現行の安定版モデルへ順次自動切り替え
-      const models = ['gemini-flash-latest', 'gemini-2.5-flash', 'gemini-2.0-flash'];
+      // Google側から案内された最新現行モデルを最優先に指定
+      const models = ['gemini-3.8-flash', 'gemini-flash-latest'];
       let lastError = null;
 
       for (const model of models) {
