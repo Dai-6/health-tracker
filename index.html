@@ -119,7 +119,7 @@
     .btn-suggest-trigger:active { background: #d1fae5; }
     .btn-suggest-trigger:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    /* 1品特化型 食事提案カード */
+    /* おすすめ食事提案カード */
     .suggest-card {
       background: linear-gradient(135deg, #f0fdf4 0%, #ecfeff 100%);
       border: 1px solid #a7f3d0; display: none; margin-bottom: 12px;
@@ -133,7 +133,7 @@
       background: #0f766e; color: #fff; border: none; border-radius: 8px;
       padding: 5px 12px; font-size: 0.74rem; font-weight: 700; cursor: pointer;
     }
-    .suggest-ai-btn:disabled { opacity: 0.6; }
+    .suggest-ai-btn:disabled { opacity: 0.6; cursor: not-allowed; }
     .recipe-dish-title { font-size: 1.05rem; font-weight: 800; color: #065f46; margin-bottom: 4px; }
     .recipe-meta-badge { font-size: 0.8rem; font-weight: 700; color: #0f766e; margin-bottom: 10px; }
     .recipe-section-label { font-size: 0.76rem; font-weight: 700; color: #047857; margin-top: 8px; margin-bottom: 4px; border-bottom: 1px dashed #6ee7b7; padding-bottom: 2px; }
@@ -297,17 +297,17 @@
       <!-- 提案トリガーボタン -->
       <div class="suggest-trigger-bar">
         <button type="button" class="btn-suggest-trigger" id="btnSuggestTrigger" onclick="requestGeminiSuggestion()">
-          ✨ 今の残り枠に合うおすすめ献立（1品＋レシピ）をAIに聞く
+          ✨ 今の残り枠に合うおすすめ献立をAIに聞く
         </button>
       </div>
 
-      <!-- おすすめ食事提案カード（1品集中レシピ表示） -->
+      <!-- おすすめ食事提案カード -->
       <div class="card suggest-card" id="suggestCard">
         <div class="suggest-head">
-          <div class="suggest-badge" id="suggestBadge">💡 今日のベスト提案</div>
+          <div class="suggest-badge" id="suggestBadge">💡 おすすめ献立</div>
           <button class="suggest-ai-btn" id="btnSuggestReload" type="button" onclick="requestGeminiSuggestion()">🔄 別の献立</button>
         </div>
-        <div id="suggestContent">AI栄養士が状況に合ったレシピを考案中...</div>
+        <div id="suggestContent">献立を考案中...</div>
       </div>
 
       <!-- 食事記録 -->
@@ -429,7 +429,7 @@
       <!-- Gemini APIキー設定（折りたたみ） -->
       <div class="card" style="padding: 10px 14px;">
         <details>
-          <summary style="font-size:0.78rem; font-weight:700; color:var(--text-sub); cursor:pointer;">⚙️ Gemini APIキー設定（自炊AI計算・提案用）</summary>
+          <summary style="font-size:0.78rem; font-weight:700; color:var(--text-sub); cursor:pointer;">⚙️️ Gemini APIキー設定（AI機能用）</summary>
           <div class="settings-box">
             <div style="margin-bottom:6px;">Google AI Studioで取得したAPIキーを入力すると端末内に安全に保存されます：</div>
             <div class="form-group" style="margin-bottom:4px;">
@@ -983,7 +983,7 @@
     }
 
     // ==========================================
-    // Gemini API 呼び出し（429レート制限 自動待機・リトライ搭載）
+    // Gemini API 呼び出し（429バックオフ付き / 表示はシームレス）
     // ==========================================
     function saveApiKey() {
       const val = document.getElementById('geminiApiKeyInput').value.trim();
@@ -1006,15 +1006,13 @@
       }
     }
 
-    async function callGeminiApi(promptText, onStatusUpdate = null) {
+    async function callGeminiApi(promptText, retries = 2) {
       if (!geminiApiKey) throw new Error('APIキーが未設定です。画面下部で登録してください。');
 
       const model = 'gemini-3.8-flash';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
-      
-      const maxRetries = 2; // レート制限時の再試行回数
-      
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+
+      for (let attempt = 0; attempt <= retries; attempt++) {
         const res = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1023,28 +1021,27 @@
           })
         });
 
-        if (res.ok) {
-          const json = await res.json();
-          if (json.candidates && json.candidates[0] && json.candidates[0].content) {
-            return json.candidates[0].content.parts[0].text;
-          } else {
-            throw new Error('回答が生成されませんでした。');
-          }
-        }
-
-        // レート制限（429 Too Many Requests）の自動待機
-        if (res.status === 429 && attempt < maxRetries) {
-          if (onStatusUpdate) onStatusUpdate('少し待機して再試行中 (約4秒)...');
-          await new Promise(r => setTimeout(r, 4000));
+        if (res.status === 429 && attempt < retries) {
+          // 待機文言は出さず、内部で少し待機してから静かに再試行
+          await new Promise(r => setTimeout(r, 3500));
           continue;
         }
 
-        const errJson = await res.json().catch(() => ({}));
-        let msg = errJson.error ? errJson.error.message : `HTTPエラー ${res.status}`;
-        if (res.status === 429) {
-          msg = 'アクセスが集中しています。数秒待ってからもう一度お試しください。';
+        if (!res.ok) {
+          const errJson = await res.json().catch(() => ({}));
+          const msg = errJson.error ? errJson.error.message : `HTTPエラー ${res.status}`;
+          if (res.status === 429) {
+            throw new Error('アクセスが集中しています。数十秒ほど待ってから再度お試しください。');
+          }
+          throw new Error(msg);
         }
-        throw new Error(msg);
+
+        const json = await res.json();
+        if (json.candidates && json.candidates[0] && json.candidates[0].content) {
+          return json.candidates[0].content.parts[0].text;
+        } else {
+          throw new Error('回答が生成されませんでした。');
+        }
       }
     }
 
@@ -1070,14 +1067,14 @@
 {"salt": 1.2, "cal": 350}`;
 
       try {
-        const text = await callGeminiApi(prompt, (status) => { btn.innerText = status; });
+        const text = await callGeminiApi(prompt);
         const cleaned = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
         const parsed = JSON.parse(cleaned);
 
         document.getElementById('foodSalt').value = parsed.salt;
         document.getElementById('foodCal').value = parsed.cal;
       } catch (err) {
-        alert(err.message);
+        alert('AI計算: ' + err.message);
       } finally {
         btn.innerText = originalBtnText;
         btn.disabled = false;
@@ -1088,19 +1085,21 @@
       const suggestCard = document.getElementById('suggestCard');
       const contentElem = document.getElementById('suggestContent');
       const badgeElem = document.getElementById('suggestBadge');
-      const btnTrigger = document.getElementById('btnSuggestTrigger');
-      const btnReload = document.getElementById('btnSuggestReload');
+      const triggerBtn = document.getElementById('btnSuggestTrigger');
+      const reloadBtn = document.getElementById('btnSuggestReload');
 
       suggestCard.style.display = 'block';
-      contentElem.innerHTML = '<div style="font-size:0.84rem; color:var(--text-sub); padding:10px 0;">AI栄養士が残り枠に合わせたレシピを1品考案中...</div>';
+      contentElem.innerHTML = '<div style="font-size:0.84rem; color:var(--text-sub); padding:10px 0;">献立を考案中...</div>';
+      
+      if (triggerBtn) triggerBtn.disabled = true;
+      if (reloadBtn) reloadBtn.disabled = true;
 
       if (!geminiApiKey) {
         contentElem.innerHTML = '<div style="color:var(--text-sub); font-size:0.82rem;">画面下部の「⚙️ Gemini APIキー設定」からキーを保存すると、この枠にオーダーメイドのメニューが提案されます。</div>';
+        if (triggerBtn) triggerBtn.disabled = false;
+        if (reloadBtn) reloadBtn.disabled = false;
         return;
       }
-
-      btnTrigger.disabled = true;
-      btnReload.disabled = true;
 
       const dayData = data[activeDate];
       const totalSalt = dayData.foods.reduce((sum, f) => sum + (parseFloat(f.salt) || 0), 0);
@@ -1109,11 +1108,11 @@
       const remainCal = Math.max(0, MAX_CAL - totalCal);
 
       if (totalSalt >= MAX_SALT) {
-        badgeElem.innerText = '⚠️ 塩分目標到達（排出支援レシピ）';
+        badgeElem.innerText = '⚠️ 塩分目標到達（排出サポート献立）';
         badgeElem.style.background = '#fee2e2';
         badgeElem.style.color = '#b91c1c';
       } else {
-        badgeElem.innerText = '💡 今日のベスト提案（1品特化レシピ）';
+        badgeElem.innerText = '💡 おすすめ献立';
         badgeElem.style.background = '#d1fae5';
         badgeElem.style.color = '#047857';
       }
@@ -1122,9 +1121,9 @@
 ユーザーの本日の状況:
 - 残り塩分枠: ${remainSalt.toFixed(2)}g (1日上限6g)
 - 残りカロリー枠: ${remainCal}kcal
-- 状況: ${totalSalt >= MAX_SALT ? 'すでに塩分6gオーバー中（カリウム豊富な排出レシピ、または無塩おかずを提案）' : '目標枠内'}
+- 状況: ${totalSalt >= MAX_SALT ? 'すでに塩分6gオーバー中（カリウム豊富な排出メニュー、または無塩おかずを提案）' : '目標枠内'}
 
-このユーザーの残り枠にぴったり収まる「最高におすすめの料理・主菜または副菜」を【1品だけ】考案し、その詳細なレシピを提供してください。
+このユーザーの残り枠に収まる「おすすめの料理」を考案し、材料と作り方を提供してください。
 必ず次のJSON形式のみで回答してください。Markdownのコードブロック(バッククォート)や前置きは一切含めないでください:
 {
   "name": "料理名（例: 鶏むね肉とブロッコリーの香味レモン焼き）",
@@ -1136,12 +1135,11 @@
 }`;
 
       try {
-        const text = await callGeminiApi(prompt, (status) => {
-          contentElem.innerHTML = `<div style="font-size:0.84rem; color:var(--text-sub); padding:10px 0;">${status}</div>`;
-        });
+        const text = await callGeminiApi(prompt);
         const cleaned = text.replace(/```json/gi, '').replace(/```/gi, '').trim();
         const recipe = JSON.parse(cleaned);
 
+        // クックパッド検索用URL
         const cookpadUrl = `https://cookpad.com/search/${encodeURIComponent(recipe.name + ' 減塩')}`;
 
         contentElem.innerHTML = `
@@ -1160,10 +1158,10 @@
           </a>
         `;
       } catch (err) {
-        contentElem.innerHTML = `<div style="color:var(--danger); font-size:0.75rem;">エラー詳細: ${escapeHtml(err.message)}</div>`;
+        contentElem.innerHTML = `<div style="color:var(--danger); font-size:0.75rem;">${escapeHtml(err.message)}</div>`;
       } finally {
-        btnTrigger.disabled = false;
-        btnReload.disabled = false;
+        if (triggerBtn) triggerBtn.disabled = false;
+        if (reloadBtn) reloadBtn.disabled = false;
       }
     }
 
