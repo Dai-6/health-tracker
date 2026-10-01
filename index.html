@@ -1009,7 +1009,7 @@
     async function callGeminiApi(promptText, retries = 2) {
       if (!geminiApiKey) throw new Error('APIキーが未設定です。画面下部で登録してください。');
 
-      const model = 'gemini-3.7-flash';
+      const model = 'gemini-3.8-flash';
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiApiKey)}`;
 
       for (let attempt = 0; attempt <= retries; attempt++) {
